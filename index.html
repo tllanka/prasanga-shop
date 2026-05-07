@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LK Fabric Meter POS</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --teal:#0f7a6e;--teal2:#0a5c52;--teal3:#064740;--teal-l:#1fada0;--teal-ll:#3dd4c6;
+  --orange:#e8580c;--orange2:#c44200;--orange-l:#ff7030;
+  --green:#1aab6d;--green2:#0e8050;--green-l:#23d98a;
+  --purple:#6c3fc5;--purple2:#4f2ba0;--purple-l:#8b65e0;
+  --blue:#1d6fc9;--blue2:#1250a0;--blue-l:#4090f0;
+  --amber:#f5a623;--amber-d:#c07800;--amber-l:#ffd166;
+  --rose:#e8304a;--rose2:#b01c32;
+  --bg:#e8eef2;--bg2:#dce5ea;--surface:#f0f5f8;
+  --card:#ffffff;--card2:#f4f8fa;
+  --border:#d0dde6;--border2:#b8ccd8;
+  --ink:#0d1f2d;--ink2:#2a3d50;--muted:#6b8299;--muted2:#9ab0c0;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Plus Jakarta Sans',sans-serif;
+  --sinhala:'Noto Sans Sinhala',sans-serif;
+  /* NEUMORPHIC EMBOSS - light theme */
+  --neu-shadow: 6px 6px 14px rgba(160,185,200,0.55), -4px -4px 10px rgba(255,255,255,0.9);
+  --neu-inset: inset 3px 3px 8px rgba(160,185,200,0.5), inset -3px -3px 8px rgba(255,255,255,0.9);
+  --neu-press: inset 4px 4px 10px rgba(140,170,190,0.6), inset -2px -2px 6px rgba(255,255,255,0.8);
+  /* COLORED EMBOSS */
+  --e-teal: inset 0 2px 3px rgba(255,255,255,0.35),inset 0 -6px 14px rgba(0,40,32,0.4),0 12px 30px rgba(10,92,82,0.45);
+  --e-orange: inset 0 2px 3px rgba(255,255,255,0.3),inset 0 -6px 14px rgba(100,20,0,0.4),0 12px 30px rgba(196,66,0,0.45);
+  --e-green: inset 0 2px 3px rgba(255,255,255,0.3),inset 0 -6px 14px rgba(0,50,25,0.35),0 12px 30px rgba(14,128,80,0.4);
+  --e-purple: inset 0 2px 3px rgba(255,255,255,0.25),inset 0 -6px 14px rgba(30,0,80,0.4),0 12px 30px rgba(108,63,197,0.45);
+  --e-blue: inset 0 2px 3px rgba(255,255,255,0.28),inset 0 -6px 14px rgba(0,30,80,0.4),0 12px 30px rgba(29,111,201,0.45);
+  --e-amber: inset 0 2px 3px rgba(255,255,255,0.32),inset 0 -6px 14px rgba(80,40,0,0.35),0 10px 26px rgba(192,120,0,0.4);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-tap-highlight-color:transparent;}
+body{font-family:var(--sinhala);color:var(--ink);background:var(--bg);min-height:100vh;}
+button,input,select{font-family:inherit;}
+
+/* ── SHELL ── */
+.app{width:min(480px,100%);margin:0 auto;position:relative;}
+.phone-screen{min-height:100svh;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;background:var(--bg);}
+.phone-screen::-webkit-scrollbar{display:none;}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:linear-gradient(140deg,var(--teal) 0%,var(--teal2) 55%,var(--teal3) 100%);
+  padding:20px 22px 36px;position:relative;overflow:hidden;
+}
+.topbar::before{content:'';position:absolute;right:-50px;top:-60px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,0.08);pointer-events:none;}
+.topbar::after{content:'';position:absolute;right:20px;bottom:-30px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.05);pointer-events:none;}
+.topbar-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-ico{
+  width:42px;height:42px;border-radius:14px;
+  background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.25);
+  display:grid;place-items:center;font-size:22px;
+  box-shadow:inset 0 2px 4px rgba(255,255,255,0.2),inset 0 -3px 8px rgba(0,0,0,0.15);
+}
+.brand-text h1{font-size:18px;font-weight:900;color:#fff;letter-spacing:0.5px;line-height:1.1;}
+.brand-ico img{width:100%;height:100%;object-fit:cover;border-radius:12px;display:block;}
+body.admin-page .topbar-menu-btn{display:none;}
+.item-select-card{
+  background:linear-gradient(145deg,#f8fbfc,#edf4f6);
+  border:1.5px solid rgba(255,255,255,0.9);
+  border-radius:20px;
+  padding:14px;
+  margin-bottom:13px;
+  box-shadow:var(--neu-shadow);
+}
+.item-select-title{
+  display:flex;align-items:center;gap:8px;
+  font-size:14px;font-weight:900;color:var(--teal2);
+  margin-bottom:12px;font-family:var(--sans);
+}
+.pin-dots{display:flex;justify-content:center;gap:13px;margin:18px 0 24px;}
+.pin-dot{width:15px;height:15px;border-radius:50%;border:3px solid #b6cec8;background:transparent;box-shadow:inset 1px 1px 3px rgba(0,0,0,0.06);}
+.pin-dot.filled{background:var(--teal);border-color:var(--teal);box-shadow:0 0 0 4px rgba(15,122,110,0.10);}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:2px;}
+.pin-key{
+  height:68px;border:none;border-radius:18px;cursor:pointer;
+  background:linear-gradient(145deg,#ffffff,#edf4f1);
+  color:var(--teal3);font-family:var(--mono);font-size:28px;font-weight:900;
+  box-shadow:6px 6px 13px rgba(160,185,200,0.55),-4px -4px 10px rgba(255,255,255,0.95),inset 0 2px 2px rgba(255,255,255,0.8),inset 0 -4px 8px rgba(175,195,190,0.28);
+  transition:all .12s;
+}
+.pin-key:active{transform:scale(.96);box-shadow:var(--neu-press);}
+.pin-key.clear{background:linear-gradient(145deg,#fff6f6,#f8dddd);color:var(--rose2);font-size:24px;}
+.pin-key.ok{grid-column:span 2;background:linear-gradient(160deg,var(--green-l),var(--green),var(--green2));color:#fff;box-shadow:var(--e-green);font-family:var(--sinhala);font-size:20px;}
+.pin-key.cancel{grid-column:1/-1;height:54px;background:linear-gradient(145deg,#f4faf7,#e8f2ee);font-family:var(--sinhala);font-size:15px;color:#52695f;}
+.modal-box.pin-box{padding:0;overflow:hidden;background:#f7fbf9;}
+.pin-head{background:linear-gradient(145deg,var(--teal3),var(--teal2));padding:28px 22px 22px;color:#fff;}
+.pin-head h2{color:#fff!important;margin:0;font-size:28px;letter-spacing:.3px;}
+.pin-head p{margin-top:8px;color:rgba(255,255,255,.68);font-weight:800;}
+.pin-body{padding:22px 22px 24px;}
+
+.brand-text p{font-size:11px;font-weight:700;color:rgba(255,255,255,0.6);letter-spacing:1.5px;font-family:var(--sans);}
+.topbar-clock{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px;padding:8px 12px;border-radius:18px;background:rgba(255,255,255,0.09);border:1px solid rgba(255,255,255,0.12);box-shadow:inset 0 1px 3px rgba(255,255,255,0.12), inset 0 -4px 10px rgba(0,0,0,0.10);}
+.clock-time{font-family:var(--mono);font-size:24px;font-weight:900;color:#fff;line-height:1;letter-spacing:1px;text-shadow:0 4px 12px rgba(0,0,0,0.18);}
+.clock-date{font-size:12.5px;font-weight:800;color:rgba(255,255,255,0.82);margin-top:6px;font-family:var(--sans);letter-spacing:0.4px;}
+.topbar-row2{display:flex;align-items:center;justify-content:space-between;}
+.ble-pill{
+  display:inline-flex;align-items:center;gap:7px;
+  background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.15);
+  padding:8px 15px;border-radius:20px;
+  font-size:12px;font-weight:800;color:rgba(255,255,255,0.78);font-family:var(--sans);
+  cursor:pointer;user-select:none;transition:all .18s ease;
+  box-shadow:inset 0 1px 3px rgba(255,255,255,0.12), inset 0 -4px 10px rgba(0,0,0,0.13);
+}
+.ble-pill:hover{background:rgba(255,255,255,0.13);transform:translateY(-1px);}
+.ble-pill:active{transform:scale(.98);}
+.ble-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.25);transition:all 0.3s;}
+.ble-dot.on{background:#4ade80;box-shadow:0 0 8px #4ade80;}
+.ble-dot.ing{background:var(--amber-l);animation:blink 0.9s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+.topbar-menu-btn{
+  width:38px;height:38px;border:none;cursor:pointer;
+  background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
+  border-radius:12px;color:#fff;font-size:18px;
+  display:grid;place-items:center;
+  box-shadow:inset 0 2px 3px rgba(255,255,255,0.2),inset 0 -3px 8px rgba(0,0,0,0.15);
+  transition:all 0.15s;
+}
+.topbar-menu-btn:hover{background:rgba(255,255,255,0.22);}
+
+/* ── CONTENT ── */
+.content{padding:0 16px 100px;margin-top:-16px;}
+
+/* ── STAT CARDS ── */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.stat-card{
+  border-radius:22px;padding:16px 16px 14px;
+  min-height:118px;position:relative;overflow:hidden;
+  cursor:pointer;transition:all 0.18s;
+}
+.stat-card:active{transform:scale(0.97);}
+.stat-card::before{content:'';position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.14);pointer-events:none;}
+.stat-card::after{content:'';position:absolute;right:10px;bottom:-20px;width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,0.08);pointer-events:none;}
+.sc-teal{background:linear-gradient(145deg,var(--teal-l),var(--teal),var(--teal3));box-shadow:var(--e-teal);}
+.sc-orange{background:linear-gradient(145deg,var(--orange-l),var(--orange),var(--orange2));box-shadow:var(--e-orange);}
+.sc-green{background:linear-gradient(145deg,var(--green-l),var(--green),var(--green2));box-shadow:var(--e-green);}
+.sc-purple{background:linear-gradient(145deg,var(--purple-l),var(--purple),var(--purple2));box-shadow:var(--e-purple);}
+/* shimmer highlight */
+.stat-card .shine{
+  position:absolute;top:0;left:0;right:0;height:50%;
+  background:linear-gradient(180deg,rgba(255,255,255,0.2),transparent);
+  border-radius:22px 22px 0 0;pointer-events:none;
+}
+.sc-ico{font-size:24px;margin-bottom:10px;display:block;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.25));}
+.sc-val{
+  font-family:var(--mono);font-size:30px;font-weight:800;
+  color:#fff;line-height:1;
+  text-shadow:0 4px 12px rgba(0,0,0,0.25);margin-bottom:6px;
+}
+.sc-label{
+  font-size:11px;font-weight:800;color:rgba(255,255,255,0.82);
+  letter-spacing:1.2px;text-transform:uppercase;font-family:var(--sans);
+}
+
+/* ── QR SCANNER BTN ── */
+.qr-btn{
+  width:100%;border:none;border-radius:20px;padding:20px;
+  color:#fff;font-size:18px;font-weight:900;letter-spacing:0.8px;
+  cursor:pointer;margin-bottom:16px;
+  background:linear-gradient(145deg,var(--teal-l),var(--teal),var(--teal3));
+  box-shadow:var(--e-teal);
+  display:flex;align-items:center;justify-content:center;gap:12px;
+  position:relative;overflow:hidden;transition:all 0.15s;
+  font-family:var(--sans);
+}
+.qr-btn::before{content:'';position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,rgba(255,255,255,0.2),transparent);pointer-events:none;}
+.qr-btn:hover{transform:translateY(-2px);filter:saturate(1.1);}
+.qr-btn:active{transform:scale(0.98);}
+
+/* ── QUICK ACTION CARDS (light neumorphic) ── */
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.qa-card{
+  background:var(--card);border-radius:20px;
+  padding:22px 14px 18px;text-align:center;
+  box-shadow:var(--neu-shadow);border:1px solid rgba(255,255,255,0.8);
+  cursor:pointer;transition:all 0.18s;
+}
+.qa-card:hover{transform:translateY(-3px);box-shadow:8px 8px 18px rgba(160,185,200,0.6),-4px -4px 12px rgba(255,255,255,0.95);}
+.qa-card:active{box-shadow:var(--neu-press);transform:scale(0.97);}
+.qa-ico{
+  width:56px;height:56px;border-radius:18px;
+  display:grid;place-items:center;font-size:26px;
+  margin:0 auto 12px;
+  box-shadow:var(--neu-shadow);
+}
+.qa-ico.teal{background:linear-gradient(145deg,#e0f5f3,#c8ede9);color:var(--teal);}
+.qa-ico.orange{background:linear-gradient(145deg,#fde8dc,#fad4c0);color:var(--orange);}
+.qa-ico.green{background:linear-gradient(145deg,#d8f5e8,#bfedda);color:var(--green);}
+.qa-ico.purple{background:linear-gradient(145deg,#e8e0f8,#d4c8f4);color:var(--purple);}
+.qa-ico.blue{background:linear-gradient(145deg,#d8eaf8,#c2dcf4);color:var(--blue);}
+.qa-ico.amber{background:linear-gradient(145deg,#fdf0d0,#fae4a8);color:var(--amber-d);}
+.qa-label{font-size:14px;font-weight:800;color:var(--ink2);}
+
+/* ── SECTION HEADER ── */
+.section-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  margin:20px 0 12px;
+}
+.section-hd h2{font-size:16px;font-weight:900;color:var(--ink2);}
+.section-hd-line{flex:1;height:1px;background:var(--border);margin-left:10px;}
+
+/* ── MAIN WEIGHING AREA ── */
+.weigh-panel{
+  background:var(--card);border-radius:24px;
+  box-shadow:var(--neu-shadow);border:1px solid rgba(255,255,255,0.8);
+  overflow:hidden;margin-bottom:16px;
+}
+/* LIVE WEIGHT TOP */
+.live-weight-top{
+  background:linear-gradient(145deg,var(--teal-l),var(--teal),var(--teal3));
+  padding:22px 20px 20px;text-align:center;position:relative;overflow:hidden;
+}
+.live-weight-top::before{content:'';position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,rgba(255,255,255,0.18),transparent);pointer-events:none;}
+.lw-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(0,0,0,0.18);border:1px solid rgba(255,255,255,0.2);
+  padding:5px 12px;border-radius:20px;
+  font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:rgba(255,255,255,0.75);font-family:var(--sans);margin-bottom:10px;
+}
+.lw-pulse{width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;animation:pulse3 2s infinite;}
+@keyframes pulse3{0%,100%{transform:scale(1)}50%{transform:scale(0.7);opacity:0.5}}
+.lw-value{
+  font-family:var(--mono);font-size:60px;line-height:1;font-weight:800;
+  color:#fff;text-shadow:0 6px 20px rgba(0,0,0,0.3);
+  margin-bottom:4px;
+}
+.lw-value .u{font-size:20px;font-family:var(--sinhala);opacity:0.75;margin-left:4px;}
+.lw-sub{font-size:12px;color:rgba(255,255,255,0.55);font-family:var(--sans);font-weight:700;}
+
+/* RESULT ROW */
+.result-row{
+  display:grid;grid-template-columns:1fr 1px 1fr 1px 1fr;
+  background:var(--card2);border-bottom:1px solid var(--border);
+}
+.rr-divider{background:var(--border);}
+.rr-block{padding:14px 10px;text-align:center;}
+.rr-label{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:0.8px;text-transform:uppercase;font-family:var(--sans);margin-bottom:6px;}
+.rr-val{font-family:var(--mono);font-size:20px;font-weight:800;color:var(--ink);}
+.rr-val.teal{color:var(--teal);}
+.rr-val.orange{color:var(--orange);}
+.rr-val.green{color:var(--green2);}
+
+/* AMOUNT STRIPE */
+.amount-stripe{
+  background:linear-gradient(90deg,rgba(245,166,35,0.08),rgba(255,255,255,0));
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;
+}
+.amt-label{font-size:13px;font-weight:800;color:var(--muted);display:flex;align-items:center;gap:8px;}
+.amt-ico{
+  width:32px;height:32px;border-radius:10px;
+  background:linear-gradient(145deg,var(--amber-l),var(--amber),var(--amber-d));
+  display:grid;place-items:center;font-size:16px;
+  box-shadow:var(--e-amber);
+}
+.amt-value{font-family:var(--mono);font-size:28px;font-weight:800;color:var(--orange2);}
+
+/* ITEM SHOWCASE */
+.item-show{
+  display:grid;grid-template-columns:88px 1fr;
+  border-bottom:1px solid var(--border);
+}
+.is-img{
+  background:linear-gradient(135deg,var(--teal3),var(--teal));
+  display:flex;align-items:center;justify-content:center;font-size:36px;
+  min-height:90px;
+}
+.is-img img{width:100%;height:100%;object-fit:cover;}
+.is-info{padding:14px 16px;display:flex;flex-direction:column;justify-content:center;gap:6px;}
+.is-name{font-size:16px;font-weight:900;color:var(--ink);line-height:1.2;}
+.is-badges{display:flex;gap:6px;flex-wrap:wrap;}
+.is-badge{
+  padding:4px 9px;border-radius:20px;font-size:11px;font-weight:800;
+  font-family:var(--sans);letter-spacing:0.3px;
+}
+.ib-teal{background:#d0f0ed;color:var(--teal2);}
+.ib-amber{background:#fde8bb;color:var(--amber-d);}
+.ib-purple{background:#e4d8f8;color:var(--purple2);}
+.is-id{font-size:11px;color:var(--muted);font-family:var(--mono);}
+.no-item{padding:22px;text-align:center;color:var(--muted);}
+.no-item-ico{font-size:36px;margin-bottom:8px;display:block;opacity:0.5;}
+.no-item-t{font-size:14px;font-weight:800;}
+
+/* INPUTS */
+.panel-inputs{padding:16px;}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px;}
+.form.full{grid-template-columns:1fr;}
+.fg{display:flex;flex-direction:column;gap:5px;}
+label{font-size:11.5px;font-weight:800;color:var(--muted);letter-spacing:0.5px;font-family:var(--sans);}
+input,select{
+  width:100%;border:1.5px solid var(--border);
+  border-radius:12px;padding:11px 13px;
+  background:var(--surface);color:var(--ink);font-weight:700;outline:none;
+  transition:all 0.18s;font-size:14px;
+  box-shadow:inset 2px 2px 6px rgba(160,185,200,0.35),inset -2px -2px 6px rgba(255,255,255,0.8);
+}
+input:focus,select:focus{border-color:var(--teal);background:#fff;box-shadow:0 0 0 3px rgba(15,122,110,0.1),inset 2px 2px 6px rgba(160,185,200,0.3);}
+input:disabled{opacity:0.6;}
+input::placeholder{color:var(--muted2);}
+select option{background:#fff;}
+.col-span{grid-column:1/-1;}
+
+/* ── EMBOSS COLORED BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px 20px;border-radius:16px;border:none;
+  font-family:var(--sinhala);font-size:13.5px;font-weight:800;
+  cursor:pointer;transition:all 0.15s;letter-spacing:0.2px;
+  position:relative;overflow:hidden;white-space:nowrap;
+}
+.btn::before{content:'';position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,rgba(255,255,255,0.25),transparent);pointer-events:none;border-radius:inherit;}
+.btn:hover{transform:translateY(-2px);filter:saturate(1.12);}
+.btn:active{transform:translateY(1px) scale(0.97);}
+
+.btn-teal{background:linear-gradient(160deg,var(--teal-ll),var(--teal),var(--teal3));color:#fff;box-shadow:var(--e-teal);}
+.btn-orange{background:linear-gradient(160deg,var(--orange-l),var(--orange),var(--orange2));color:#fff;box-shadow:var(--e-orange);}
+.btn-green{background:linear-gradient(160deg,var(--green-l),var(--green),var(--green2));color:#fff;box-shadow:var(--e-green);}
+.btn-purple{background:linear-gradient(160deg,var(--purple-l),var(--purple),var(--purple2));color:#fff;box-shadow:var(--e-purple);}
+.btn-blue{background:linear-gradient(160deg,var(--blue-l),var(--blue),var(--blue2));color:#fff;box-shadow:var(--e-blue);}
+.btn-amber{background:linear-gradient(160deg,var(--amber-l),var(--amber),var(--amber-d));color:#2a1800;box-shadow:var(--e-amber);}
+.btn-ghost{background:var(--card);color:var(--muted);border:1.5px solid var(--border);box-shadow:var(--neu-shadow);}
+.btn-ghost:hover{color:var(--ink2);}
+.btn-ghost::before{display:none;}
+/* compat */
+.btn.blue{background:linear-gradient(160deg,var(--blue-l),var(--blue),var(--blue2));color:#fff;box-shadow:var(--e-blue);}
+.btn.red{background:linear-gradient(160deg,#f87171,var(--rose),var(--rose2));color:#fff;}
+.btn.yellow{background:linear-gradient(160deg,var(--amber-l),var(--amber),var(--amber-d));color:#2a1800;box-shadow:var(--e-amber);}
+.btn.ghost{background:var(--card);color:var(--muted);border:1.5px solid var(--border);box-shadow:var(--neu-shadow);}
+.btn.ghost::before{display:none;}
+
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:0;}
+
+/* FINISH BTN */
+.finish-btn{
+  width:100%;border:none;border-radius:20px;padding:18px;
+  color:#fff;font-size:20px;font-weight:900;letter-spacing:0.4px;
+  cursor:pointer;margin-top:14px;
+  background:linear-gradient(160deg,var(--teal-ll),var(--teal),var(--teal3));
+  box-shadow:var(--e-teal);
+  position:relative;overflow:hidden;transition:all 0.16s;font-family:var(--sinhala);
+}
+.finish-btn::before{content:'';position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,rgba(255,255,255,0.2),transparent);pointer-events:none;}
+.finish-btn:hover{transform:translateY(-2px);filter:saturate(1.1);}
+.finish-btn:active{transform:scale(0.98);}
+
+/* COUNT PILL */
+.count-pill{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;border-radius:14px;margin-bottom:14px;
+  background:var(--card);border:1.5px solid var(--border);
+  box-shadow:var(--neu-shadow);font-size:14px;font-weight:800;color:var(--muted);
+}
+.count-pill span:last-child{margin-left:auto;color:var(--teal);font-family:var(--mono);font-size:16px;}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{
+  position:fixed;left:0;right:0;bottom:10px;
+  background:rgba(255,255,255,0.96);
+  border:1px solid rgba(208,221,230,0.95);
+  box-shadow:0 18px 40px rgba(160,185,200,0.34);
+  display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;
+  padding:10px 12px 14px;z-index:10;
+  max-width:440px;margin:0 auto;align-items:end;
+  border-radius:28px;
+}
+.nav-btn{
+  border:none;background:transparent;color:#a0a9b2;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;
+  font-weight:800;font-size:11px;cursor:pointer;padding:0 2px 2px;
+  transition:all 0.24s cubic-bezier(.34,1.56,.64,1);font-family:var(--sans);
+  position:relative;min-height:64px;
+}
+.nav-ico{
+  width:42px;height:42px;border-radius:50%;
+  display:grid;place-items:center;
+  background:transparent;font-size:22px;color:#a7a7a7;
+  transition:all 0.28s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:none;position:relative;z-index:2;
+}
+.nav-btn span:last-child{transition:all 0.24s ease;color:#a0a9b2;}
+.nav-btn:hover .nav-ico{transform:translateY(-4px);}
+.nav-btn.active .nav-ico{
+  width:64px;height:64px;transform:translateY(-26px);
+  background:linear-gradient(145deg,#50d3ea,#39bfd8);color:#fff;
+  box-shadow:0 14px 30px rgba(57,191,216,0.34), inset 0 2px 4px rgba(255,255,255,0.35);
+}
+.nav-btn.active span:last-child{color:#39bfd8;font-weight:900;transform:translateY(-8px);}
+.nav-btn.active{color:#39bfd8;}
+.nav-btn.active::before{
+  content:'';position:absolute;top:-4px;left:50%;transform:translateX(-50%);
+  width:74px;height:74px;border-radius:50%;background:rgba(57,191,216,0.12);z-index:1;
+}
+.nav-center{transform:none;}
+.nav-center .nav-ico{width:42px;height:42px;border-radius:50%;background:transparent!important;color:#a7a7a7!important;box-shadow:none!important;}
+.nav-center.active .nav-ico,.nav-center:hover .nav-ico{box-shadow:0 14px 30px rgba(57,191,216,0.34), inset 0 2px 4px rgba(255,255,255,0.35)!important;}
+.nav-center span:last-child{color:inherit;font-weight:800;}
+
+/* ── PAGES ── */
+.page{display:none;}
+.page.active{display:block;animation:fadeIn 0.22s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+/* ── ADMIN TABS ── */
+.admin-panel{background:transparent;border:none;box-shadow:none;}
+.admin-tabs{display:flex;gap:8px;overflow-x:auto;padding:0 2px 13px;margin-bottom:10px;scrollbar-width:none;}
+.admin-tabs::-webkit-scrollbar{display:none;}
+.admin-tab{
+  flex:0 0 auto;border:none;border-radius:16px;
+  padding:10px 14px;display:flex;align-items:center;gap:7px;
+  cursor:pointer;color:#fff;font-weight:800;font-size:12.5px;
+  transition:all 0.16s;white-space:nowrap;font-family:var(--sans);
+  position:relative;overflow:hidden;
+}
+.admin-tab::before{content:'';position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,rgba(255,255,255,0.2),transparent);pointer-events:none;}
+.admin-tab:nth-child(1){background:linear-gradient(155deg,var(--teal-ll),var(--teal),var(--teal3));box-shadow:var(--e-teal);}
+.admin-tab:nth-child(2){background:linear-gradient(155deg,var(--teal-l),var(--teal2),var(--teal3));box-shadow:var(--e-teal);}
+.admin-tab:nth-child(3){background:linear-gradient(155deg,var(--amber-l),var(--amber),var(--amber-d));color:#2a1800;box-shadow:var(--e-amber);}
+.admin-tab:nth-child(4){background:linear-gradient(155deg,var(--purple-l),var(--purple),var(--purple2));box-shadow:var(--e-purple);}
+.admin-tab:nth-child(5){background:linear-gradient(155deg,var(--green-l),var(--green),var(--green2));box-shadow:var(--e-green);}
+.admin-tab:nth-child(6){background:linear-gradient(155deg,var(--orange-l),var(--orange),var(--orange2));box-shadow:var(--e-orange);}
+.admin-tab:nth-child(7){background:linear-gradient(155deg,var(--blue-l),var(--blue),var(--blue2));box-shadow:var(--e-blue);}
+.tab-ico{width:28px;height:28px;border-radius:10px;background:rgba(255,255,255,0.2);display:grid;place-items:center;font-size:15px;flex-shrink:0;}
+.admin-tab.active{transform:translateY(-3px);filter:saturate(1.15);}
+.admin-tab.active::after{content:'';position:absolute;bottom:0;left:20%;right:20%;height:3px;background:rgba(255,255,255,0.7);border-radius:3px 3px 0 0;}
+.admin-subpage{display:none;}
+.admin-subpage.active{display:block;animation:fadeIn 0.22s ease;}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid rgba(255,255,255,0.8);border-radius:22px;padding:18px;margin-bottom:13px;box-shadow:var(--neu-shadow);}
+.card h2,.card h3{font-weight:900;color:var(--ink);}
+.admin-sub-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1.5px solid var(--border);}
+.admin-sub-head h3{margin:0;font-size:20px;font-weight:900;color:var(--ink);}
+
+/* SECTION CARD */
+.section-card{background:var(--card);border:1px solid rgba(255,255,255,0.8);border-radius:18px;overflow:hidden;margin-top:12px;box-shadow:var(--neu-shadow);}
+.section-title{
+  padding:12px 16px 10px;
+  background:linear-gradient(90deg,rgba(15,122,110,0.08),transparent);
+  border-bottom:1px solid var(--border);
+  color:var(--teal2);font-size:14px;font-weight:900;
+  display:flex;align-items:center;gap:8px;font-family:var(--sans);
+}
+.data-row{display:grid;grid-template-columns:34px 1fr auto 34px;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);}
+.data-row:last-child{border-bottom:none;}
+.data-icon{font-size:19px;color:var(--teal);}
+.data-label{font-size:14px;font-weight:800;color:var(--ink2);}
+.data-value{font-family:var(--mono);font-size:18px;font-weight:800;color:var(--ink);}
+.data-unit{font-size:12px;font-weight:700;color:var(--muted);}
+
+/* TABLE */
+.table-shell{overflow:auto;border:1.5px solid var(--border);border-radius:18px;background:var(--card);box-shadow:var(--neu-shadow);}
+.table-shell table{border-collapse:separate;border-spacing:0;width:100%;min-width:700px;}
+.table-shell thead th{position:sticky;top:0;background:linear-gradient(180deg,#e8f4f2,var(--card));color:var(--muted);padding:12px 10px;border-bottom:1.5px solid var(--border);font-size:11.5px;font-weight:800;text-align:left;letter-spacing:0.5px;font-family:var(--sans);white-space:nowrap;}
+.table-shell td{border-radius:0!important;border:0!important;border-bottom:1px solid var(--border)!important;padding:10px;font-weight:700;font-size:13px;color:var(--ink);vertical-align:middle;}
+.table-shell tr:nth-child(even) td{background:rgba(15,122,110,0.03)!important;}
+.table-shell tr:last-child td{border-bottom:none!important;}
+.icon-action{width:32px;height:32px;border:none;border-radius:10px;color:#fff;display:inline-grid;place-items:center;cursor:pointer;font-size:14px;margin:2px;transition:all 0.14s;}
+.icon-action.edit{background:linear-gradient(145deg,var(--blue-l),var(--blue),var(--blue2));box-shadow:var(--e-blue);}
+.icon-action.del{background:linear-gradient(145deg,#f87171,var(--rose),var(--rose2));}
+.icon-action:hover{transform:translateY(-1px);filter:saturate(1.1);}
+.index-badge{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#d0f0ed,#b8e8e4);color:var(--teal2);font-size:11px;font-weight:900;box-shadow:var(--neu-shadow);}
+.item-img{width:40px;height:40px;object-fit:cover;border-radius:9px;border:1.5px solid var(--border);}
+table{width:100%;border-collapse:separate;border-spacing:0 7px;}
+th{font-size:11.5px;text-align:left;color:var(--muted);padding:6px 10px;font-weight:800;white-space:nowrap;font-family:var(--sans);}
+td{background:var(--card);border-top:1.5px solid var(--border);border-bottom:1.5px solid var(--border);padding:10px;font-weight:700;font-size:13px;vertical-align:middle;box-shadow:2px 2px 6px rgba(160,185,200,0.25),-1px -1px 4px rgba(255,255,255,0.7);}
+td:first-child{border-left:1.5px solid var(--border);border-radius:12px 0 0 12px;}
+td:last-child{border-right:1.5px solid var(--border);border-radius:0 12px 12px 0;}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(13,31,45,0.6);display:none;place-items:center;z-index:100;padding:18px;backdrop-filter:blur(10px);}
+.modal.show{display:grid;}
+.modal-box{width:min(460px,96vw);background:var(--card);border:1.5px solid rgba(255,255,255,0.9);border-radius:26px;padding:28px 24px;box-shadow:0 30px 80px rgba(13,31,45,0.25),var(--neu-shadow);animation:popIn 0.25s cubic-bezier(0.34,1.56,0.64,1);text-align:center;}
+@keyframes popIn{from{opacity:0;transform:scale(0.88)}to{opacity:1;transform:none}}
+.modal-box h2{margin:0 0 8px;color:var(--ink);}
+.modal-box .actions{justify-content:center;margin-top:18px;}
+.modal-box input{margin-top:10px;text-align:center;}
+
+/* TOAST */
+#toast{position:fixed;right:16px;bottom:90px;z-index:200;background:var(--ink2);color:#fff;border:1.5px solid rgba(255,255,255,0.15);padding:12px 16px;border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,0.2);display:none;font-weight:800;max-width:min(400px,90vw);font-size:13.5px;border-left:4px solid var(--teal-l);}
+#toast.show{display:block;animation:tIn 0.3s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes tIn{from{transform:translateX(120%)}to{transform:translateX(0)}}
+
+/* MISC */
+.small{font-size:12px;color:var(--muted);font-weight:700;line-height:1.5;font-family:var(--sans);}
+.sub{color:var(--muted);font-size:13px;margin-bottom:14px;font-weight:700;line-height:1.55;font-family:var(--sans);}
+.pill{display:inline-flex;gap:5px;align-items:center;border:1.5px solid var(--border);border-radius:999px;padding:6px 12px;font-size:11.5px;font-weight:800;color:var(--teal2);background:rgba(15,122,110,0.06);font-family:var(--sans);box-shadow:var(--neu-shadow);}
+.right-note{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
+.hidden{display:none!important;}
+.desktop-sections{display:none!important;}
+.print-slip{display:none;}
+@media print{body *{visibility:hidden;}.print-slip,.print-slip *{visibility:visible;}.print-slip{display:block;font-family:'Noto Sans Sinhala',sans-serif;color:#000;padding:14px;position:fixed;inset:0;}.print-slip h2{text-align:center;}.print-slip table{border-collapse:collapse;width:100%;font-size:12px;}.print-slip td,.print-slip th{border:1px solid #000;background:#fff;color:#000;padding:5px;border-radius:0!important;}.print-slip .center{text-align:center;}.print-slip .mono{font-family:'JetBrains Mono',monospace;}}
+
+.about-logo{width:70px;height:70px;margin:0 auto 12px;border-radius:22px;background:linear-gradient(145deg,var(--teal-l),var(--teal3));box-shadow:var(--e-teal);display:grid;place-items:center;color:#fff;font-size:30px;}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="phone-screen">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-row1">
+    <div class="brand">
+      <div class="brand-ico" id="brandLogoBox"><span id="brandLogoEmoji">🧵</span><img id="brandLogoImg" src="" alt="Logo" style="display:none;"></div>
+      <div class="brand-text">
+        <h1 id="heroTitle">LK FABRIC POS</h1>
+        <p>METER BILLING SYSTEM</p>
+      </div>
+    </div>
+    <div class="topbar-clock">
+      <div class="clock-time" id="clockText">12:00</div>
+      <div class="clock-date" id="clockDate">Wed May 07 2025</div>
+    </div>
+  </div>
+  <div class="topbar-row2">
+    <div class="ble-pill" onclick="connectBluetooth()" title="Connect Bluetooth Scale">
+      <div class="ble-dot" id="ble-indicator"></div>
+      <span id="ble-label-main">Tap to connect scale</span>
+    </div>
+    
+  </div>
+</div>
+
+<!-- ══ MAIN PAGE ══ -->
+<section id="main" class="page active">
+<div class="content">
+
+  <!-- WEIGHING PANEL -->
+  <div class="section-hd">
+    <h2>⚖ Weighing</h2>
+    <div class="section-hd-line"></div>
+  </div>
+
+  <div class="weigh-panel">
+    <!-- LIVE WEIGHT -->
+    <div class="live-weight-top">
+      <div class="lw-chip"><div class="lw-pulse"></div>LIVE WEIGHT</div>
+      <div class="lw-value"><span id="weightDisplay">0.000</span><span class="u">kg</span></div>
+      <div class="lw-sub">Bluetooth scale / manual input</div>
+    </div>
+
+    <!-- RESULT ROW -->
+    <div class="result-row">
+      <div class="rr-block">
+        <div class="rr-label">Meter</div>
+        <div class="rr-val teal"><span id="meterDisplay">0.00</span> m</div>
+      </div>
+      <div class="rr-divider"></div>
+      <div class="rr-block">
+        <div class="rr-label">Yard</div>
+        <div class="rr-val orange"><span id="yardDisplay">0.00</span> yd</div>
+      </div>
+      <div class="rr-divider"></div>
+      <div class="rr-block">
+        <div class="rr-label">Net kg</div>
+        <div class="rr-val green"><span id="netDisplayShow">0.000</span></div>
+      </div>
+    </div>
+    <span id="netDisplay" class="hidden">0.000</span>
+
+    <!-- AMOUNT -->
+    <div class="amount-stripe">
+      <div class="amt-label">
+        <div class="amt-ico">රු</div>
+        Total Amount
+      </div>
+      <div class="amt-value" id="amountDisplay">Rs 0.00</div>
+    </div>
+
+    <!-- ITEM SHOWCASE -->
+    <div id="item-showcase" class="item-show" style="display:none;">
+      <div class="is-img" id="is-img-wrap">
+        <span id="is-img-emoji">🧵</span>
+        <img id="is-img-photo" src="" alt="" style="display:none;">
+      </div>
+      <div class="is-info">
+        <div class="is-name" id="selectedItemName">Select Fabric Item</div>
+        <div class="is-badges">
+          <span class="is-badge ib-teal" id="badge-mpk">📏 0.000 m/kg</span>
+          <span class="is-badge ib-amber" id="badge-price">💰 Rs 0.00/m</span>
+          <span class="is-badge ib-purple" id="badge-reel">⚖ 0.000 kg</span>
+        </div>
+        <div class="is-id" id="selectedItemMeta2">ID: -</div>
+      </div>
+    </div>
+    <div id="no-item-state" class="no-item">
+      <span class="no-item-ico">👕</span>
+      <div class="no-item-t">Fabric Item Select කරන්න</div>
+    </div>
+
+    <!-- INPUTS -->
+    <div class="panel-inputs">
+      <div class="item-select-card">
+        <div class="item-select-title">🧵 Item Select</div>
+        <div class="form full" style="margin-bottom:11px;">
+          <div class="fg">
+            <label>Item Code Type කරන්න</label>
+            <input id="mainItemId" placeholder="IT001" oninput="loadMainItemById()">
+          </div>
+          <div class="fg">
+            <label>Item ID Select</label>
+            <select id="mainItemSelect" onchange="loadMainItemSelect()"></select>
+          </div>
+        </div>
+      </div>
+      <div class="form" style="margin-bottom:13px;">
+        <div class="fg col-span">
+          <label>Manual Weight kg</label>
+          <input id="mainManualWeight" type="number" step="0.001" placeholder="10.500" oninput="setMainManualWeight()">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAT CARDS -->
+  <div class="stat-grid" style="margin-top:16px;">
+    <div class="stat-card sc-teal">
+      <div class="shine"></div>
+      <span class="sc-ico">⚖️</span>
+      <div class="sc-val" id="stat-weight">0.000</div>
+      <div class="sc-label">Scale Weight</div>
+    </div>
+    <div class="stat-card sc-orange">
+      <div class="shine"></div>
+      <span class="sc-ico">📏</span>
+      <div class="sc-val" id="stat-meters">0.00</div>
+      <div class="sc-label">Meters</div>
+    </div>
+    <div class="stat-card sc-green">
+      <div class="shine"></div>
+      <span class="sc-ico">📐</span>
+      <div class="sc-val" id="stat-yards">0.00</div>
+      <div class="sc-label">Yards</div>
+    </div>
+    <div class="stat-card sc-purple">
+      <div class="shine"></div>
+      <span class="sc-ico">🛒</span>
+      <div class="sc-val" id="stat-rolls">0</div>
+      <div class="sc-label">Bill Rolls</div>
+    </div>
+  </div>
+  <span id="selectedItemMeta1" class="hidden"></span>
+
+</div>
+</section>
+
+<!-- ══ REPORTS PAGE ══ -->
+<section id="reports" class="page">
+<div class="content" style="padding-top:20px;">
+  <h2 style="font-size:22px;font-weight:900;margin-bottom:6px;">📊 Sales Reports</h2>
+  <p class="sub">Daily / Monthly XLSX reports generate කරන්න.</p>
+  <div class="card">
+    <div class="form" style="margin-bottom:0;">
+      <div class="fg"><label>Daily Date</label><input id="dailyDate" type="date"></div>
+      <div class="fg"><label>Monthly</label><input id="monthPick" type="month"></div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-green" onclick="exportDailyReport()">📥 Daily XLSX</button>
+      <button class="btn btn-teal" onclick="exportMonthlyReport()">📥 Monthly</button>
+      <button class="btn btn-amber" onclick="prepareEmailReport('daily')">📧 Email</button>
+    </div>
+  </div>
+  <div class="card" style="overflow:auto;padding:0;border-radius:18px;">
+    <table>
+      <thead><tr><th style="padding:12px 14px;background:linear-gradient(180deg,#e0f0ee,#fff);border-bottom:1.5px solid var(--border);">Date/Time</th><th style="padding:12px 14px;background:linear-gradient(180deg,#e0f0ee,#fff);border-bottom:1.5px solid var(--border);">Invoice</th><th style="padding:12px 14px;background:linear-gradient(180deg,#e0f0ee,#fff);border-bottom:1.5px solid var(--border);">Total</th></tr></thead>
+      <tbody id="reportBodyMobile"></tbody>
+    </table>
+  </div>
+</div>
+</section>
+
+<!-- ══ ABOUT PAGE ══ -->
+<section id="about" class="page">
+<div class="content" style="padding-top:20px;">
+  <div class="section-card" style="margin-top:0;">
+    <div class="section-title">About</div>
+    <div style="padding:16px;">
+      <div style="text-align:center;margin-bottom:16px;">
+        <div class="about-logo">🧵</div>
+        <h2 style="margin:0;font-size:22px;font-weight:900;color:var(--teal2);" id="aboutShopName">LK Fabric Meter POS</h2>
+        <p class="sub" style="margin:6px 0 0;">Bluetooth Scale • Meter Billing • XLSX Reports</p>
+      </div>
+      <div class="section-card" style="margin-top:0;">
+        <div class="data-row"><span class="data-icon">⚖</span><span class="data-label">Scale</span><span class="data-value" style="font-size:13px;font-family:var(--sans);">Numeric kg BT</span><span></span></div>
+        <div class="data-row"><span class="data-icon">📏</span><span class="data-label">Calc</span><span class="data-value" style="font-size:13px;font-family:var(--sans);">kg → meter → yard</span><span></span></div>
+        <div class="data-row"><span class="data-icon">📊</span><span class="data-label">Reports</span><span class="data-value" style="font-size:13px;font-family:var(--sans);">Daily / Monthly</span><span></span></div>
+      </div>
+      <div class="section-card" style="margin-top:12px;">
+        <div class="section-title">Shop</div>
+        <div class="data-row"><span class="data-icon">🏪</span><span class="data-label">Name</span><span class="data-value" style="font-size:13px;font-family:var(--sans);" id="aboutShopDisplay">—</span><span></span></div>
+        <div class="data-row"><span class="data-icon">📞</span><span class="data-label">Phone</span><span class="data-value" style="font-size:13px;font-family:var(--sans);" id="aboutPhoneDisplay">—</span><span></span></div>
+        <div class="data-row"><span class="data-icon">✉</span><span class="data-label">Email</span><span class="data-value" style="font-size:13px;font-family:var(--sans);" id="aboutEmailDisplay">—</span><span></span></div>
+      </div>
+      <p class="small" style="text-align:center;margin-top:14px;">LK Weighing Solution – Ratnapura</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ══ ADMIN PAGE ══ -->
+<section id="admin" class="page">
+<div class="content admin-wrap" style="padding-top:20px;padding-bottom:120px;">
+<div class="admin-panel">
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="showAdminSection('adminShop',this)"><span class="tab-ico">🏪</span><span>Shop</span></button>
+    <button class="admin-tab" onclick="showAdminSection('adminItems',this)"><span class="tab-ico">🧵</span><span>Items</span></button>
+    <button class="admin-tab" onclick="showAdminSection('adminPrice',this)"><span class="tab-ico">💲</span><span>Price</span></button>
+    <button class="admin-tab" onclick="showAdminSection('adminReel',this)"><span class="tab-ico">⚖️</span><span>Reel</span></button>
+    <button class="admin-tab" onclick="showAdminSection('adminBackup',this)"><span class="tab-ico">💾</span><span>Backup</span></button>
+    <button class="admin-tab" onclick="showAdminSection('adminSettings',this)"><span class="tab-ico">🖨️</span><span>Settings</span></button>
+    <button class="admin-tab" onclick="showAdminSection('adminList',this)"><span class="tab-ico">📋</span><span>List</span></button>
+  </div>
+
+  <div id="adminShop" class="admin-subpage active">
+    <div class="card">
+      <div class="admin-sub-head"><h3>🏪 Shop Details</h3></div>
+      <div class="form">
+        <div class="fg"><label>Shop Name</label><input id="shopName"></div>
+        <div class="fg"><label>Phone</label><input id="shopPhone"></div>
+        <div class="fg col-span"><label>Address</label><input id="shopAddress"></div>
+        <div class="fg"><label>Report Email</label><input id="shopEmail" type="email"></div>
+        <div class="fg"><label>Logo</label><input id="shopLogo" type="file" accept="image/*"></div>
+      </div>
+      <div class="actions"><button class="btn btn-teal" onclick="saveShop()">💾 Save Shop</button></div>
+    </div>
+  </div>
+  <div id="adminItems" class="admin-subpage">
+    <div class="card">
+      <div class="admin-sub-head"><h3>🧵 Item Register</h3></div>
+      <div class="form">
+        <div class="fg"><label>Item ID</label><input id="itemId" placeholder="IT001"></div>
+        <div class="fg"><label>Item Name</label><input id="itemName" placeholder="Premium Cotton"></div>
+        <div class="fg"><label>Price per Meter</label><input id="itemPrice" type="number" step="0.01"></div>
+        <div class="fg"><label>Meter per 1kg</label><input id="itemMpk" type="number" step="0.001" placeholder="5.50"></div>
+        <div class="fg col-span"><label>Item Image</label><input id="itemImage" type="file" accept="image/*"></div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-teal" onclick="saveItem()">✅ Register</button>
+        <button class="btn btn-ghost" onclick="clearItemForm()">✕ Clear</button>
+      </div>
+    </div>
+  </div>
+  <div id="adminPrice" class="admin-subpage">
+    <div class="card">
+      <div class="admin-sub-head"><h3>💲 Price Update</h3></div>
+      <div class="form full">
+        <div class="fg"><label>Item ID</label><input id="priceItemId" oninput="loadPriceItem()"></div>
+        <div class="fg"><label>Item Select</label><select id="priceItemSelect" onchange="loadPriceItemSelect()"></select></div>
+        <div class="fg"><label>Current Price</label><input id="currentPrice" disabled></div>
+        <div class="fg"><label>New Price per Meter</label><input id="newPrice" type="number" step="0.01"></div>
+      </div>
+      <div class="actions"><button class="btn btn-amber" onclick="updatePrice()">💾 Update Price</button></div>
+    </div>
+  </div>
+  <div id="adminReel" class="admin-subpage">
+    <div class="card">
+      <div class="admin-sub-head"><h3>⚖️ Empty Reel</h3></div>
+      <p class="small" style="margin-bottom:12px;">Item select කර scale weight save කරන්න.</p>
+      <div class="form full">
+        <div class="fg"><label>Item ID</label><input id="reelItemId" oninput="loadReelById()"></div>
+        <div class="fg"><label>Item Select</label><select id="reelItemSelect" onchange="loadReelBySelect()"></select></div>
+        <div class="fg"><label>Current Scale kg</label><input id="reelWeight" disabled></div>
+      </div>
+      <div class="actions"><button class="btn btn-purple" onclick="saveReelDeduction()">💾 Save Reel kg</button></div>
+    </div>
+  </div>
+  <div id="adminBackup" class="admin-subpage">
+    <div class="card">
+      <div class="admin-sub-head"><h3>💾 Backup / Restore</h3></div>
+      <div class="actions">
+        <button class="btn btn-teal" onclick="selectBackupFolder()">📁 Folder</button>
+        <button class="btn btn-blue" onclick="manualBackup()">☁ Backup</button>
+        <button class="btn btn-amber" onclick="restoreFromFile()">♻ Restore</button>
+        <input id="restoreFile" type="file" accept="application/json" class="hidden" onchange="handleRestoreFile(event)">
+      </div>
+      <div class="right-note"><span class="pill" id="backupStatusPill">Local JSON Backup</span></div>
+    </div>
+  </div>
+  <div id="adminSettings" class="admin-subpage">
+    <div class="card">
+      <div class="admin-sub-head"><h3>🖨️ Settings</h3></div>
+      <div class="form full">
+        <div class="fg"><label>Printer Type</label><select id="printerType"><option value="browser">Browser Print</option><option value="bluetooth-note">Bluetooth printer</option></select></div>
+        <div class="fg"><label>Scale Hint</label><input id="scaleHint"></div>
+      </div>
+      <div class="actions"><button class="btn btn-green" onclick="saveConnectionSettings()">💾 Save</button></div>
+    </div>
+  </div>
+  <div id="adminList" class="admin-subpage">
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="admin-sub-head" style="padding:16px 16px 12px;margin-bottom:0;"><h3>📋 Item List</h3></div>
+      <div class="table-shell"><table><thead><tr><th>#</th><th>Img</th><th>ID</th><th>Name</th><th>Price/m</th><th>m/kg</th><th>Reel kg</th><th>Action</th></tr></thead><tbody id="itemListBody"></tbody></table></div>
+    </div>
+  </div>
+</div>
+</div>
+</section>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <button class="nav-btn" onclick="showPage('reports',this)">
+    <span class="nav-ico">📊</span><span>Reports</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('about',this)">
+    <span class="nav-ico">ℹ️</span><span>About</span>
+  </button>
+  <button class="nav-btn nav-center active" onclick="showPage('main',this)">
+    <span class="nav-ico">🏠</span><span>Home</span>
+  </button>
+  <button class="nav-btn" onclick="addSaleLine()">
+    <span class="nav-ico">➕</span><span>Add</span>
+  </button>
+  <button class="nav-btn" onclick="openAdminLogin()">
+    <span class="nav-ico">⚙️</span><span>Admin</span>
+  </button>
+</div>
+
+</div><!-- /phone-screen -->
+</div><!-- /app -->
+
+<!-- MODAL -->
+<div class="modal" id="adminModal">
+  <div class="modal-box pin-box">
+    <div class="pin-head">
+      <h2>Admin Login</h2>
+      <p>Admin PIN enter කරන්න</p>
+    </div>
+    <div class="pin-body">
+      <input id="adminPass" type="password" inputmode="numeric" pattern="[0-9]*" class="hidden" onkeydown="if(event.key==='Enter')adminLogin()">
+      <div class="pin-dots" id="pinDots">
+        <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+      </div>
+      <div class="pin-grid">
+        <button class="pin-key" onclick="pinPress('1')">1</button>
+        <button class="pin-key" onclick="pinPress('2')">2</button>
+        <button class="pin-key" onclick="pinPress('3')">3</button>
+        <button class="pin-key" onclick="pinPress('4')">4</button>
+        <button class="pin-key" onclick="pinPress('5')">5</button>
+        <button class="pin-key" onclick="pinPress('6')">6</button>
+        <button class="pin-key" onclick="pinPress('7')">7</button>
+        <button class="pin-key" onclick="pinPress('8')">8</button>
+        <button class="pin-key" onclick="pinPress('9')">9</button>
+        <button class="pin-key clear" onclick="pinBack()">⌫</button>
+        <button class="pin-key" onclick="pinPress('0')">0</button>
+        <button class="pin-key clear" onclick="pinClear()">×</button>
+        <button class="pin-key ok" onclick="adminLogin()">✓ Enter</button>
+        <button class="pin-key cancel" onclick="closeAdminLogin()">× Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="printSlip" class="print-slip"></div>
+<div id="toast" class="toast"></div>
+<div class="desktop-sections"></div>
+
+<script>
+const KG_TO_YARD=1.0936133;
+const DB_KEY='lk_fabric_pos_tlstyle_v1';
+let db={shop:{name:'LK Fabric Meter POS',address:'',phone:'',email:'',logo:''},items:[],bills:[],settings:{printerType:'browser',scaleHint:''}};
+let currentWeight=0,currentBill=[],selectedSaleItem=null,selectedReelItem=null,adminUnlocked=false,backupDirHandle=null;
+const $=id=>document.getElementById(id);
+const money=n=>Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=(n,d=3)=>Number(n||0).toFixed(d);
+const todayStr=()=>new Date().toISOString().slice(0,10);
+const monthStr=()=>new Date().toISOString().slice(0,7);
+const invoiceNo=()=>'INV-'+new Date().toISOString().replace(/[-:.TZ]/g,'').slice(0,14);
+function toast(msg){const t=$('toast');if(!t)return;t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function esc(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+function parseWeight(text){const m=String(text||'').match(/[+-]?\d+(?:\.\d+)?/g);if(!m)return null;const ki=String(text).toLowerCase().lastIndexOf('kg');let pick=m[m.length-1];if(ki>-1){const b=String(text).slice(0,ki);const l=b.match(/[+-]?\d+(?:\.\d+)?/g);if(l)pick=l[l.length-1];}const v=Math.abs(Number(pick));return Number.isFinite(v)?v:null;}
+function loadLocal(){try{const raw=localStorage.getItem(DB_KEY);if(raw)db=JSON.parse(raw);}catch(e){}if(!db.items||!db.items.length){db.items=[{id:'IT001',name:'Premium Cotton Fabric',price:150,meterPerKg:5.5,emptyReelKg:.3,image:''},{id:'IT002',name:'School Uniform Fabric',price:120,meterPerKg:6.2,emptyReelKg:.25,image:''}];}if(!db.bills)db.bills=[];if(!db.settings)db.settings={printerType:'browser',scaleHint:''};if($('dailyDate'))$('dailyDate').value=todayStr();if($('monthPick'))$('monthPick').value=monthStr();loadShopForm();loadSettingsForm();refreshAll();updateClock();setInterval(updateClock,30000);}
+function saveLocal(skip=false){localStorage.setItem(DB_KEY,JSON.stringify(db));refreshAll();if(!skip)autoBackup();}
+function updateClock(){
+  const now=new Date();
+  if($('clockText'))$('clockText').textContent=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  if($('clockDate'))$('clockDate').textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'2-digit',year:'numeric'});
+}
+function refreshAll(){if($('heroTitle'))$('heroTitle').textContent=db.shop.name||'LK FABRIC POS';updateHeaderLogo();refreshSelects();refreshItemList();refreshReports();refreshAbout();updateLiveCalc();}
+function updateHeaderLogo(){const img=$('brandLogoImg'),emo=$('brandLogoEmoji');if(!img||!emo)return;if(db.shop.logo){img.src=db.shop.logo;img.style.display='block';emo.style.display='none';}else{img.removeAttribute('src');img.style.display='none';emo.style.display='inline';}}
+function refreshAbout(){if($('aboutShopName'))$('aboutShopName').textContent=db.shop.name||'LK Fabric Meter POS';if($('aboutShopDisplay'))$('aboutShopDisplay').textContent=db.shop.name||'—';if($('aboutPhoneDisplay'))$('aboutPhoneDisplay').textContent=db.shop.phone||'—';if($('aboutEmailDisplay'))$('aboutEmailDisplay').textContent=db.shop.email||'—';}
+function showPage(id,btn){document.body.classList.toggle('admin-page',id==='admin');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));const page=$(id);if(page)page.classList.add('active');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');else{const map={reports:0,about:1,main:2,admin:4};const nb=document.querySelectorAll('.nav-btn');if(map[id]!==undefined&&nb[map[id]])nb[map[id]].classList.add('active');}window.scrollTo({top:0,behavior:'smooth'});}
+function openAdminLogin(){if(adminUnlocked){showPage('admin');showAdminSection('adminShop');return;}$('adminModal').classList.add('show');pinClear();}
+function closeAdminLogin(){$('adminModal').classList.remove('show');pinClear();}
+function updatePinDots(){const val=($('adminPass')&&$('adminPass').value)||'';document.querySelectorAll('#pinDots .pin-dot').forEach((d,i)=>d.classList.toggle('filled',i<val.length));}
+function pinPress(n){const p=$('adminPass');if(!p)return;if(p.value.length<4)p.value+=String(n);updatePinDots();if(p.value.length===4)setTimeout(adminLogin,120);}
+function pinBack(){const p=$('adminPass');if(!p)return;p.value=p.value.slice(0,-1);updatePinDots();}
+function pinClear(){const p=$('adminPass');if(p)p.value='';updatePinDots();}
+function showAdminSection(id,tabBtn){showPage('admin');document.querySelectorAll('#admin .admin-subpage').forEach(p=>p.classList.remove('active'));if($(id))$(id).classList.add('active');document.querySelectorAll('#admin .admin-tab').forEach(t=>t.classList.remove('active'));if(tabBtn)tabBtn.classList.add('active');else{const map={adminShop:0,adminItems:1,adminPrice:2,adminReel:3,adminBackup:4,adminSettings:5,adminList:6};const tabs=document.querySelectorAll('#admin .admin-tab');if(tabs[map[id]||0])tabs[map[id]||0].classList.add('active');}window.scrollTo({top:0,behavior:'smooth'});}
+function adminLogin(){if($('adminPass').value==='1990'){adminUnlocked=true;closeAdminLogin();showPage('admin');showAdminSection('adminShop');toast('Admin unlocked ✓');}else{toast('PIN වැරදියි');pinClear();}}
+function setBleUI(s,lbl){const el=$('ble-indicator');if(el)el.className='ble-dot'+(s==='on'?' on':s==='ing'?' ing':'');const l=$('ble-label-main');if(l)l.textContent=lbl||'';}
+function setWeight(v){currentWeight=Number(v||0);['weightDisplay'].forEach(id=>{if($(id))$(id).textContent=num(currentWeight,3);});if($('mainManualWeight'))$('mainManualWeight').value=num(currentWeight,3);if($('reelWeight'))$('reelWeight').value=num(currentWeight,3);updateLiveCalc();}
+function simulateWeight(){setWeight((Math.random()*12+1).toFixed(3));toast('Test weight set ✓');}
+function decodeBleValue(value){
+  try{
+    const txt=new TextDecoder().decode(value).trim();
+    const w=parseWeight(txt);
+    if(w!==null)return w;
+  }catch(e){}
+  try{
+    if(value.byteLength>=2){
+      const u16=value.getUint16(0,true)/100;
+      if(Number.isFinite(u16)&&u16>0&&u16<1000)return u16;
+    }
+    if(value.byteLength>=4){
+      const f32=value.getFloat32(0,true);
+      if(Number.isFinite(f32)&&f32>0&&f32<1000)return Math.abs(f32);
+    }
+  }catch(e){}
+  return null;
+}
+function handleBleWeightValue(value){
+  const w=decodeBleValue(value);
+  if(w!==null)setWeight(w);
+}
+async function connectBluetooth(){
+  if(!navigator.bluetooth){toast('Android Chrome/Edge වලින් open කරන්න');return;}
+  if(location.protocol!=='https:' && location.hostname!=='localhost' && location.hostname!=='127.0.0.1'){
+    toast('Bluetooth වැඩ කරන්න HTTPS හෝ localhost අවශ්‍යයි');return;
+  }
+  const servicesToTry=[
+    'battery_service',0x181d,0x181a,0xffe0,0xfff0,
+    '0000ffe0-0000-1000-8000-00805f9b34fb',
+    '0000fff0-0000-1000-8000-00805f9b34fb',
+    '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
+  ];
+  try{
+    setBleUI('ing','Select scale...');
+    const device=await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true,
+      optionalServices:servicesToTry
+    });
+    setBleUI('ing','Connecting...');
+    device.addEventListener('gattserverdisconnected',()=>setBleUI('off','Tap to connect scale'));
+    const server=await device.gatt.connect();
+    const services=await server.getPrimaryServices();
+    let found=false;
+    for(const service of services){
+      let chars=[];
+      try{chars=await service.getCharacteristics();}catch(e){continue;}
+      for(const ch of chars){
+        try{
+          if(ch.properties.notify||ch.properties.indicate){
+            await ch.startNotifications();
+            ch.addEventListener('characteristicvaluechanged',e=>handleBleWeightValue(e.target.value));
+            found=true;
+          }
+          if(ch.properties.read){
+            const v=await ch.readValue();
+            handleBleWeightValue(v);
+            found=true;
+          }
+        }catch(e){}
+      }
+    }
+    if(found){
+      setBleUI('on','Connected: '+(device.name||'Scale'));
+      toast('Scale connected ✓');
+      return;
+    }
+    setBleUI('off','Tap to connect scale');
+    toast('Scale data characteristic හමු නොවුණා');
+  }catch(e){
+    setBleUI('off','Tap to connect scale');
+    if(e.name!=='NotFoundError')toast('BT: '+(e.message||e));
+  }
+}
+function findItem(id){return db.items.find(x=>x.id===id);}
+function refreshSelects(){const opts='<option value="">-- Select Item --</option>'+db.items.map(x=>`<option value="${esc(x.id)}">${esc(x.id)} - ${esc(x.name||'')}</option>`).join('');['priceItemSelect','reelItemSelect','mainItemSelect'].forEach(id=>{if($(id))$(id).innerHTML=opts;});}
+function loadMainItemSelect(){const id=$('mainItemSelect')?$('mainItemSelect').value:'';if($('mainItemId'))$('mainItemId').value=id;selectedSaleItem=findItem(id)||null;updateLiveCalc();}
+function loadMainItemById(){const id=($('mainItemId')&&$('mainItemId').value||'').trim();if($('mainItemSelect'))$('mainItemSelect').value=id;selectedSaleItem=findItem(id)||null;updateLiveCalc();}
+function setMainManualWeight(){const v=$('mainManualWeight')?$('mainManualWeight').value:'';setWeight(Number(v||0));}
+function calcForItem(item,grossKg){const d=Number((item&&item.emptyReelKg)||0);const netKg=Math.max(0,Number(grossKg||0)-d);const meter=netKg*Number((item&&item.meterPerKg)||0);const yard=meter*KG_TO_YARD;const amount=meter*Number((item&&item.price)||0);return{grossKg:Number(grossKg||0),deduction:d,netKg,meter,yard,amount};}
+function updateItemShowcase(){
+  const ns=$('no-item-state'),sh=$('item-showcase');
+  if(!ns||!sh)return;
+  if(!selectedSaleItem){ns.style.display='block';sh.style.display='none';return;}
+  ns.style.display='none';sh.style.display='grid';
+  if($('selectedItemName'))$('selectedItemName').textContent=selectedSaleItem.name||'';
+  if($('badge-mpk'))$('badge-mpk').textContent='📏 '+num(selectedSaleItem.meterPerKg,3)+' m/kg';
+  if($('badge-price'))$('badge-price').textContent='💰 Rs '+money(selectedSaleItem.price)+'/m';
+  if($('badge-reel'))$('badge-reel').textContent='⚖ '+num(selectedSaleItem.emptyReelKg,3)+' kg';
+  if($('selectedItemMeta2'))$('selectedItemMeta2').textContent='ID: '+(selectedSaleItem.id||'-');
+  const ph=$('is-img-photo'),em=$('is-img-emoji');
+  if(selectedSaleItem.image&&ph&&em){ph.src=selectedSaleItem.image;ph.style.display='block';em.style.display='none';}
+  else if(ph&&em){ph.style.display='none';em.style.display='block';}
+}
+function updateLiveCalc(){
+  const c=selectedSaleItem?calcForItem(selectedSaleItem,currentWeight):{deduction:0,netKg:currentWeight,meter:0,yard:0,amount:0};
+  if($('meterDisplay'))$('meterDisplay').textContent=num(c.meter,2);
+  if($('yardDisplay'))$('yardDisplay').textContent=num(c.yard,2);
+  if($('amountDisplay'))$('amountDisplay').textContent='Rs '+money(c.amount);
+  if($('netDisplay'))$('netDisplay').textContent=num(c.netKg,2);
+  if($('netDisplayShow'))$('netDisplayShow').textContent=num(c.netKg,3);
+  if($('stat-weight'))$('stat-weight').textContent=num(currentWeight,3);
+  if($('stat-meters'))$('stat-meters').textContent=num(c.meter,2);
+  if($('stat-yards'))$('stat-yards').textContent=num(c.yard,2);
+  if($('stat-rolls'))$('stat-rolls').textContent=currentBill.length;
+  if($('mainItemSelect')&&selectedSaleItem)$('mainItemSelect').value=selectedSaleItem.id;
+  if($('mainItemId')&&selectedSaleItem)$('mainItemId').value=selectedSaleItem.id;
+  if($('itemCountDisplay'))$('itemCountDisplay').textContent=currentBill.length+' Roll';
+  updateItemShowcase();
+}
+function addSaleLine(){if(!selectedSaleItem){toast('Item select කරන්න');return;}if(currentWeight<=0){toast('Weight > 0 විය යුතුයි');return;}const c=calcForItem(selectedSaleItem,currentWeight);currentBill.push({itemId:selectedSaleItem.id,itemName:selectedSaleItem.name,price:Number(selectedSaleItem.price),meterPerKg:Number(selectedSaleItem.meterPerKg),...c});updateLiveCalc();toast('Item added ✓');}
+function billTotals(lines=currentBill){return lines.reduce((a,l)=>{a.gross+=l.grossKg;a.net+=l.netKg;a.meter+=l.meter;a.yard+=l.yard;a.total+=l.amount;return a;},{gross:0,net:0,meter:0,yard:0,total:0});}
+function finishBill(){if(!currentBill.length){toast('Item add කරන්න');return;}const inv=invoiceNo();const now=new Date();const total=billTotals();const bill={invoice:inv,date:todayStr(),time:now.toLocaleTimeString(),customer:'Walk-in',lines:currentBill,total};db.bills.push(bill);saveLocal();buildPrintSlip(bill);currentBill=[];updateLiveCalc();setTimeout(()=>window.print(),150);toast('Bill saved ✓');}
+function buildPrintSlip(bill){const lines=bill.lines.map(l=>`<tr><td>${esc(l.itemId)} ${esc(l.itemName)}</td><td class="mono">${num(l.grossKg)}</td><td class="mono">${num(l.meter,2)}</td><td class="mono">${money(l.amount)}</td></tr>`).join('');$('printSlip').innerHTML=`<h2>${esc(db.shop.name||'LK Fabric Meter POS')}</h2><div class="center">${esc(db.shop.address||'')} ${esc(db.shop.phone||'')}</div><hr><table><tr><td>Invoice</td><td class="mono">${esc(bill.invoice)}</td></tr><tr><td>Date</td><td>${esc(bill.date)} ${esc(bill.time)}</td></tr></table><br><table><thead><tr><th>Item</th><th>kg</th><th>Meter</th><th>Amount</th></tr></thead><tbody>${lines}</tbody></table><br><table><tr><td>Total Meter</td><td class="mono">${num(bill.total.meter,2)} m</td></tr><tr><td><b>Total Amount</b></td><td class="mono"><b>Rs ${money(bill.total.total)}</b></td></tr></table><p class="center">Thank you!</p>`;}
+function refreshReports(){const html=(db.bills||[]).slice().reverse().map(b=>`<tr><td style="font-size:12px;font-family:var(--mono);">${esc(b.date)}</td><td style="font-family:var(--mono);font-size:11px;">${esc(b.invoice)}</td><td style="color:var(--teal2);font-family:var(--mono);font-weight:800;">Rs ${money(b.total&&b.total.total)}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">No reports yet</td></tr>';if($('reportBodyMobile'))$('reportBodyMobile').innerHTML=html;}
+function reportRows(filterFn){const rows=[];(db.bills||[]).filter(filterFn).forEach(b=>{b.lines.forEach(l=>rows.push({'Date':b.date,'Time':b.time,'Invoice':b.invoice,'Item ID':l.itemId,'Item Name':l.itemName,'Gross kg':Number(num(l.grossKg)),'Deduction kg':Number(num(l.deduction)),'Net kg':Number(num(l.netKg)),'Meter':Number(num(l.meter,2)),'Yard':Number(num(l.yard,2)),'Price/Meter':l.price,'Amount':Number(num(l.amount,2))}));});return rows;}
+function exportRows(rows,filename){if(!rows.length){toast('Data නැහැ');return;}if(typeof XLSX==='undefined'){toast('XLSX load නැහැ');return;}const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Report');XLSX.writeFile(wb,filename);}
+function exportDailyReport(){const d=$('dailyDate').value||todayStr();exportRows(reportRows(b=>b.date===d),`LK_Fabric_Daily_${d}.xlsx`);}
+function exportMonthlyReport(){const m=$('monthPick').value||monthStr();exportRows(reportRows(b=>String(b.date).startsWith(m)),`LK_Fabric_Monthly_${m}.xlsx`);}
+function prepareEmailReport(type){const email=(db.shop.email||'').trim();if(!email){toast('Admin → Shop → email save කරන්න');return;}const subject=encodeURIComponent(type==='daily'?'Daily Fabric Sales Report':'Monthly Fabric Sales Report');location.href=`mailto:${encodeURIComponent(email)}?subject=${subject}&body=${encodeURIComponent('Report XLSX download කර attach කරන්න.\nShop: '+(db.shop.name||''))}`;}
+function loadShopForm(){if($('shopName'))$('shopName').value=db.shop.name||'';if($('shopPhone'))$('shopPhone').value=db.shop.phone||'';if($('shopAddress'))$('shopAddress').value=db.shop.address||'';if($('shopEmail'))$('shopEmail').value=db.shop.email||'';}
+async function fileToDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});}
+async function saveShop(){db.shop.name=$('shopName').value.trim()||'LK Fabric Meter POS';db.shop.phone=$('shopPhone').value.trim();db.shop.address=$('shopAddress').value.trim();db.shop.email=$('shopEmail').value.trim();const f=$('shopLogo').files[0];if(f)db.shop.logo=await fileToDataURL(f);saveLocal();toast('Shop saved ✓');}
+async function saveItem(){const id=$('itemId').value.trim();if(!id){toast('Item ID enter කරන්න');return;}let item=findItem(id)||{id,emptyReelKg:0,image:''};item.name=$('itemName').value.trim()||id;item.price=Number($('itemPrice').value||0);item.meterPerKg=Number($('itemMpk').value||0);const f=$('itemImage').files[0];if(f)item.image=await fileToDataURL(f);if(!findItem(id))db.items.push(item);saveLocal();clearItemForm();toast('Item saved ✓');}
+function clearItemForm(){['itemId','itemName','itemPrice','itemMpk','itemImage'].forEach(id=>{if($(id))$(id).value='';});}
+function editItem(id){const item=findItem(id);if(!item)return;$('itemId').value=item.id;$('itemName').value=item.name;$('itemPrice').value=item.price;$('itemMpk').value=item.meterPerKg;showAdminSection('adminItems');}
+function deleteItem(id){if(!confirm('Delete?'))return;db.items=db.items.filter(x=>x.id!==id);saveLocal();toast('Deleted');}
+function refreshItemList(){const html=db.items.map((x,i)=>`<tr><td><div class="index-badge">${i+1}</div></td><td>${x.image?`<img class="item-img" src="${x.image}">`:'-'}</td><td style="font-family:var(--mono);">${esc(x.id)}</td><td>${esc(x.name)}</td><td style="color:var(--teal2);font-family:var(--mono);">Rs ${money(x.price)}</td><td style="font-family:var(--mono);">${num(x.meterPerKg)}</td><td style="font-family:var(--mono);">${num(x.emptyReelKg)}</td><td><button class="icon-action edit" onclick="editItem('${esc(x.id)}')">✎</button><button class="icon-action del" onclick="deleteItem('${esc(x.id)}')">🗑</button></td></tr>`).join('')||'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px;">No items</td></tr>';if($('itemListBody'))$('itemListBody').innerHTML=html;}
+function loadPriceItem(){const id=$('priceItemId').value.trim();const item=findItem(id);if(item){$('priceItemSelect').value=id;$('currentPrice').value=money(item.price);$('newPrice').value=item.price;}else{$('currentPrice').value='';}}
+function loadPriceItemSelect(){const id=$('priceItemSelect').value;$('priceItemId').value=id;loadPriceItem();}
+function updatePrice(){const item=findItem($('priceItemId').value.trim());if(!item){toast('Item හමු නැහැ');return;}item.price=Number($('newPrice').value||0);saveLocal();toast('Price updated ✓');}
+function loadReelById(){const id=$('reelItemId').value.trim();selectedReelItem=findItem(id)||null;if(selectedReelItem&&$('reelItemSelect'))$('reelItemSelect').value=id;}
+function loadReelBySelect(){const id=$('reelItemSelect').value;if($('reelItemId'))$('reelItemId').value=id;selectedReelItem=findItem(id)||null;}
+function saveReelDeduction(){loadReelById();if(!selectedReelItem){toast('Item select කරන්න');return;}selectedReelItem.emptyReelKg=Number(currentWeight||0);saveLocal();toast('Reel weight saved ✓');}
+function loadSettingsForm(){if($('printerType'))$('printerType').value=db.settings.printerType||'browser';if($('scaleHint'))$('scaleHint').value=db.settings.scaleHint||'';}
+function saveConnectionSettings(){db.settings.printerType=$('printerType').value;db.settings.scaleHint=$('scaleHint').value.trim();saveLocal();toast('Settings saved ✓');}
+async function selectBackupFolder(){if(!window.showDirectoryPicker){downloadJsonBackup();return;}try{backupDirHandle=await window.showDirectoryPicker();await manualBackup();}catch(e){toast('Cancelled');}}
+async function autoBackup(){if(!backupDirHandle)return;try{const file=await backupDirHandle.getFileHandle('LK_Fabric_POS_Backup.json',{create:true});const w=await file.createWritable();await w.write(JSON.stringify(db,null,2));await w.close();}catch(e){}}
+async function manualBackup(){if(backupDirHandle){await autoBackup();toast('Backup saved ✓');}else{downloadJsonBackup();toast('Downloaded ✓');}}
+function downloadJsonBackup(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='LK_Fabric_POS_Backup.json';a.click();URL.revokeObjectURL(a.href);}
+function restoreFromFile(){$('restoreFile').click();}
+function handleRestoreFile(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.items||!d.bills)throw new Error('Invalid');db=d;saveLocal(true);loadShopForm();loadSettingsForm();refreshAll();toast('Restore done ✓');}catch(err){toast('Restore failed');}};r.readAsText(f);}
+window.addEventListener('DOMContentLoaded',loadLocal);
+</script>
+</body>
+</html>
