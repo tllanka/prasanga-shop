@@ -590,6 +590,44 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
 .pin-key.ok{font-size:19px;border-radius:18px;}
 .pin-key.cancel{height:50px;border-radius:16px;}
 
+
+/* --- V7 backup/manual/finish refinements --- */
+.content{padding-bottom:150px!important;}
+.main-footer-notes{margin:14px 0 86px!important;padding:8px 10px 10px!important;}
+.head-backup-pill{
+  display:inline-flex;align-items:center;gap:6px;margin-left:8px;
+  padding:5px 10px;border-radius:999px;
+  background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.14);
+  color:rgba(255,255,255,0.78);font-size:10.5px;font-weight:900;font-family:var(--sans);
+}
+.head-backup-pill .b-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,0.34);}
+.head-backup-pill.active .b-dot{background:#4ade80;box-shadow:0 0 8px #4ade80;animation:blink 0.9s infinite;}
+.head-backup-pill.done .b-dot{background:#4ade80;box-shadow:0 0 8px rgba(74,222,128,.6);}
+.finish-main-btn{
+  width:100%;margin-top:12px;border:none;border-radius:18px;padding:16px 18px;
+  color:#fff;font-size:18px;font-weight:900;letter-spacing:.2px;cursor:pointer;
+  background:linear-gradient(160deg,var(--green-l),var(--green),var(--green2));
+  box-shadow:var(--e-green);font-family:var(--sinhala);position:relative;overflow:hidden;
+}
+.finish-main-btn::before{content:'';position:absolute;top:0;left:0;right:0;height:50%;background:linear-gradient(180deg,rgba(255,255,255,.24),transparent);}
+.manual-locked-wrap{position:relative;}
+.manual-lock-note{
+  margin-top:6px;font-size:11px;font-weight:800;color:var(--muted);
+  font-family:var(--sans);display:flex;align-items:center;gap:5px;
+}
+.manual-locked{cursor:pointer;background:#eef4f5!important;color:#677b88!important;}
+.backup-time-box{
+  margin-top:12px;padding:12px 14px;border-radius:16px;
+  background:linear-gradient(145deg,#f7fbfb,#eaf3f5);
+  border:1px solid var(--border);box-shadow:var(--neu-shadow);
+  font-size:12px;font-weight:900;color:var(--teal2);font-family:var(--sans);
+}
+.backup-time-box span{color:var(--ink2);font-family:var(--mono);}
+@media (max-height:720px){
+  .main-footer-notes{margin-bottom:96px!important;}
+  .content{padding-bottom:160px!important;}
+}
+
 </style>
 </head>
 <body>
@@ -703,11 +741,13 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
         </div>
       </div>
       <div class="form" style="margin-bottom:13px;">
-        <div class="fg col-span">
+        <div class="fg col-span manual-locked-wrap">
           <label>Manual Weight kg</label>
-          <input id="mainManualWeight" type="number" step="0.001" placeholder="10.500" oninput="setMainManualWeight()">
+          <input id="mainManualWeight" class="manual-locked" type="number" step="0.01" placeholder="Scale only" readonly onclick="requestManualWeightUnlock()" onfocus="requestManualWeightUnlock()" oninput="setMainManualWeight()">
+          <div class="manual-lock-note" id="manualLockNote">🔒 Scale disconnected නම් PIN දාලා manual weight add කරන්න</div>
         </div>
       </div>
+      <button class="finish-main-btn" onclick="finishBill()">🖨️ Finish / Print / Save</button>
     </div>
   </div>
 
@@ -909,6 +949,7 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
         <input id="restoreFile" type="file" accept="application/json" class="hidden" onchange="handleRestoreFile(event)">
       </div>
       <div class="right-note"><span class="pill" id="backupStatusPill">Local JSON Backup</span></div>
+      <div class="backup-time-box">Last Auto Backup: <span id="lastBackupTime">—</span></div>
     </div>
   </div>
   <div id="adminSettings" class="admin-subpage">
@@ -1016,16 +1057,43 @@ const todayStr=()=>new Date().toISOString().slice(0,10);
 const monthStr=()=>new Date().toISOString().slice(0,7);
 const invoiceNo=()=>'INV-'+new Date().toISOString().replace(/[-:.TZ]/g,'').slice(0,14);
 function toast(msg){const t=$('toast');if(!t)return;t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+function formatBackupTime(v){
+  if(!v)return '—';
+  try{return new Date(v).toLocaleString('en-US',{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return v;}
+}
+function setBackupHead(state,msg){
+  const pill=$('headBackupPill'),txt=$('headBackupText');
+  if(!pill||!txt)return;
+  pill.classList.remove('active','done');
+  if(state)pill.classList.add(state);
+  txt.textContent=msg||'Backup ready';
+}
+function updateBackupUI(){
+  const t=formatBackupTime(db.settings&&db.settings.lastBackupAt);
+  if($('lastBackupTime'))$('lastBackupTime').textContent=t;
+  if($('backupStatusPill'))$('backupStatusPill').textContent='Auto Backup: '+t;
+  setBackupHead(db.settings&&db.settings.lastBackupAt?'done':'','Backup '+(db.settings&&db.settings.lastBackupAt?'OK':'ready'));
+}
+function markAutoBackupDone(){
+  if(!db.settings)db.settings={};
+  db.settings.lastBackupAt=new Date().toISOString();
+  localStorage.setItem(DB_KEY,JSON.stringify(db));
+  updateBackupUI();
+}
 function esc(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 function parseWeight(text){const m=String(text||'').match(/[+-]?\d+(?:\.\d+)?/g);if(!m)return null;const ki=String(text).toLowerCase().lastIndexOf('kg');let pick=m[m.length-1];if(ki>-1){const b=String(text).slice(0,ki);const l=b.match(/[+-]?\d+(?:\.\d+)?/g);if(l)pick=l[l.length-1];}const v=Math.abs(Number(pick));return Number.isFinite(v)?v:null;}
-function loadLocal(){try{const raw=localStorage.getItem(DB_KEY);if(raw)db=JSON.parse(raw);}catch(e){}if(!db.items||!db.items.length){db.items=[{id:'IT001',name:'Premium Cotton Fabric',price:150,meterPerKg:5.5,emptyReelKg:.3,image:''},{id:'IT002',name:'School Uniform Fabric',price:120,meterPerKg:6.2,emptyReelKg:.25,image:''}];}if(!db.bills)db.bills=[];if(!db.settings)db.settings={printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:''};db.settings.scaleDeviceName=db.settings.scaleDeviceName||'';db.settings.printerDeviceName=db.settings.printerDeviceName||'';if($('dailyDate'))$('dailyDate').value=todayStr();if($('monthPick'))$('monthPick').value=monthStr();loadShopForm();loadSettingsForm();refreshAll();updateClock();setInterval(updateClock,30000);setTimeout(tryReconnectSavedDevices,800);}
-function saveLocal(skip=false){localStorage.setItem(DB_KEY,JSON.stringify(db));refreshAll();if(!skip)autoBackup();}
+function loadLocal(){try{const raw=localStorage.getItem(DB_KEY);if(raw)db=JSON.parse(raw);}catch(e){}if(!db.items||!db.items.length){db.items=[{id:'IT001',name:'Premium Cotton Fabric',price:150,meterPerKg:5.5,emptyReelKg:.3,image:''},{id:'IT002',name:'School Uniform Fabric',price:120,meterPerKg:6.2,emptyReelKg:.25,image:''}];}if(!db.bills)db.bills=[];if(!db.settings)db.settings={printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:'',lastBackupAt:''};db.settings.scaleDeviceName=db.settings.scaleDeviceName||'';db.settings.printerDeviceName=db.settings.printerDeviceName||'';db.settings.lastBackupAt=db.settings.lastBackupAt||'';if($('dailyDate'))$('dailyDate').value=todayStr();if($('monthPick'))$('monthPick').value=monthStr();loadShopForm();loadSettingsForm();refreshAll();updateClock();setInterval(updateClock,30000);setTimeout(tryReconnectSavedDevices,800);}
+function saveLocal(skip=false){
+  localStorage.setItem(DB_KEY,JSON.stringify(db));
+  refreshAll();
+  if(!skip)autoBackup();
+}
 function updateClock(){
   const now=new Date();
   if($('clockText'))$('clockText').textContent=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
   if($('clockDate'))$('clockDate').textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'2-digit',year:'numeric'});
 }
-function refreshAll(){if($('heroTitle'))$('heroTitle').textContent=db.shop.name||'LK FABRIC POS';updateHeaderLogo();refreshSelects();refreshItemList();refreshReports();refreshAbout();updateLiveCalc();}
+function refreshAll(){if($('heroTitle'))$('heroTitle').textContent=db.shop.name||'LK FABRIC POS';updateHeaderLogo();refreshSelects();refreshItemList();refreshReports();refreshAbout();updateLiveCalc();updateBackupUI();}
 function updateHeaderLogo(){const img=$('brandLogoImg'),emo=$('brandLogoEmoji');if(!img||!emo)return;if(db.shop.logo){img.src=db.shop.logo;img.style.display='block';emo.style.display='none';}else{img.removeAttribute('src');img.style.display='none';emo.style.display='inline';}}
 function refreshAbout(){if($('aboutShopName'))$('aboutShopName').textContent=db.shop.name||'LK Fabric Meter POS';if($('aboutShopDisplay'))$('aboutShopDisplay').textContent=db.shop.name||'—';if($('aboutPhoneDisplay'))$('aboutPhoneDisplay').textContent=db.shop.phone||'—';if($('aboutEmailDisplay'))$('aboutEmailDisplay').textContent=db.shop.email||'—';}
 function updateBottomNotch(){
@@ -1255,13 +1323,19 @@ function updateLiveCalc(){
 function addSaleLine(){if(!selectedSaleItem){toast('Item select කරන්න');return;}if(currentWeight<=0){toast('Weight > 0 විය යුතුයි');return;}const c=calcForItem(selectedSaleItem,currentWeight);currentBill.push({itemId:selectedSaleItem.id,itemName:selectedSaleItem.name,price:Number(selectedSaleItem.price),meterPerKg:Number(selectedSaleItem.meterPerKg),...c});updateLiveCalc();toast('Item added ✓');}
 function billTotals(lines=currentBill){return lines.reduce((a,l)=>{a.gross+=l.grossKg;a.net+=l.netKg;a.meter+=l.meter;a.yard+=l.yard;a.total+=l.amount;return a;},{gross:0,net:0,meter:0,yard:0,total:0});}
 function finishBill(){
+  if(!selectedSaleItem && !currentBill.length){toast('Item select කරන්න');return;}
+  if(selectedSaleItem && currentWeight>0){addSaleLine();}
   if(!currentBill.length){toast('Item add කරන්න');return;}
   const inv=invoiceNo();const now=new Date();const total=billTotals();
-  const bill={invoice:inv,date:todayStr(),time:now.toLocaleTimeString(),customer:'Walk-in',lines:currentBill,total};
-  db.bills.push(bill);saveLocal();buildPrintSlip(bill);currentBill=[];updateLiveCalc();
+  const bill={invoice:inv,date:todayStr(),time:now.toLocaleTimeString(),customer:'Walk-in',lines:[...currentBill],total};
+  db.bills.push(bill);
+  buildPrintSlip(bill);
+  saveLocal();
   if(db.settings.printerType==='bluetooth-ble'&&printerCharacteristic){printBleReceipt(bill).catch(()=>window.print());}
   else setTimeout(()=>window.print(),150);
-  toast('Bill saved ✓');
+  currentBill=[];
+  clearMainPage();
+  toast('Bill saved, printed & backed up ✓');
 }
 async function printBleReceipt(bill){
   if(!printerCharacteristic){toast('Printer connect කරන්න');return;}
@@ -1307,6 +1381,49 @@ function refreshItemList(){
   if($('itemPageBadge'))$('itemPageBadge').textContent=`Page ${itemPage} / ${maxPage}`;
 }
 function updateChosenFile(inputId,labelId,clearOnly=false){const inp=$(inputId),lab=$(labelId);if(!lab)return;if(clearOnly||!inp||!inp.files||!inp.files[0]){lab.textContent='No file selected';return;}lab.textContent=inp.files[0].name;}
+function isScaleConnected(){
+  const el=$('ble-indicator');
+  return !!(el&&el.classList.contains('on'));
+}
+function requestManualWeightUnlock(){
+  const inp=$('mainManualWeight');
+  if(!inp)return;
+  if(!inp.readOnly)return;
+  if(isScaleConnected()){
+    toast('Scale connected. Manual weight lock කරලා තියෙන්නේ.');
+    inp.blur();
+    return;
+  }
+  const pin=prompt('Manual Weight unlock PIN');
+  if(pin==='1990'){
+    inp.readOnly=false;
+    inp.classList.remove('manual-locked');
+    inp.placeholder='Manual weight kg';
+    if($('manualLockNote'))$('manualLockNote').textContent='🔓 Manual weight enabled until Finish / Clear';
+    setTimeout(()=>inp.focus(),50);
+  }else if(pin!==null){
+    toast('PIN වැරදියි');
+    inp.blur();
+  }
+}
+function lockManualWeight(){
+  const inp=$('mainManualWeight');
+  if(!inp)return;
+  inp.readOnly=true;
+  inp.classList.add('manual-locked');
+  inp.placeholder='Scale only';
+  if($('manualLockNote'))$('manualLockNote').textContent='🔒 Scale disconnected නම් PIN දාලා manual weight add කරන්න';
+}
+function clearMainPage(){
+  selectedSaleItem=null;
+  currentWeight=0;
+  if($('mainItemId'))$('mainItemId').value='';
+  if($('mainItemSelect'))$('mainItemSelect').value='';
+  if($('mainManualWeight'))$('mainManualWeight').value='';
+  lockManualWeight();
+  updateLiveCalc();
+  if($('weightDisplay'))$('weightDisplay').textContent='0.00';
+}
 function loadPriceItem(){const id=$('priceItemId').value.trim();const item=findItem(id);if(item){$('priceItemSelect').value=id;$('currentPrice').value=money(item.price);$('newPrice').value=item.price;}else{$('currentPrice').value='';}}
 function loadPriceItemSelect(){const id=$('priceItemSelect').value;$('priceItemId').value=id;loadPriceItem();}
 function updatePrice(){const item=findItem($('priceItemId').value.trim());if(!item){toast('Item හමු නැහැ');return;}item.price=Number($('newPrice').value||0);saveLocal();toast('Price updated ✓');}
@@ -1325,7 +1442,11 @@ function saveConnectionSettings(){
 }
 async function selectBackupFolder(){if(!window.showDirectoryPicker){downloadJsonBackup();return;}try{backupDirHandle=await window.showDirectoryPicker();await manualBackup();}catch(e){toast('Cancelled');}}
 async function autoBackup(){if(!backupDirHandle)return;try{const file=await backupDirHandle.getFileHandle('LK_Fabric_POS_Backup.json',{create:true});const w=await file.createWritable();await w.write(JSON.stringify(db,null,2));await w.close();}catch(e){}}
-async function manualBackup(){if(backupDirHandle){await autoBackup();toast('Backup saved ✓');}else{downloadJsonBackup();toast('Downloaded ✓');}}
+async function manualBackup(){
+  await autoBackup();
+  if(!backupDirHandle)downloadJsonBackup();
+  toast('Backup saved ✓');
+}else{downloadJsonBackup();toast('Downloaded ✓');}}
 function downloadJsonBackup(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='LK_Fabric_POS_Backup.json';a.click();URL.revokeObjectURL(a.href);}
 function restoreFromFile(){$('restoreFile').click();}
 function handleRestoreFile(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.items||!d.bills)throw new Error('Invalid');db=d;saveLocal(true);loadShopForm();loadSettingsForm();refreshAll();toast('Restore done ✓');}catch(err){toast('Restore failed');}};r.readAsText(f);}
