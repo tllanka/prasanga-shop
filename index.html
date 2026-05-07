@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>LK Fabric Meter POS</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <style>
 :root{
   --teal:#0f7a6e;--teal2:#0a5c52;--teal3:#064740;--teal-l:#1fada0;--teal-ll:#3dd4c6;
@@ -1357,7 +1357,50 @@ async function printBleReceipt(bill){
 function buildPrintSlip(bill){const lines=bill.lines.map(l=>`<tr><td>${esc(l.itemId)} ${esc(l.itemName)}</td><td class="mono">${num(l.grossKg)}</td><td class="mono">${num(l.meter,2)}</td><td class="mono">${money(l.amount)}</td></tr>`).join('');$('printSlip').innerHTML=`<h2>${esc(db.shop.name||'LK Fabric Meter POS')}</h2><div class="center">${esc(db.shop.address||'')} ${esc(db.shop.phone||'')}</div><hr><table><tr><td>Invoice</td><td class="mono">${esc(bill.invoice)}</td></tr><tr><td>Date</td><td>${esc(bill.date)} ${esc(bill.time)}</td></tr></table><br><table><thead><tr><th>Item</th><th>kg</th><th>Meter</th><th>Amount</th></tr></thead><tbody>${lines}</tbody></table><br><table><tr><td>Total Meter</td><td class="mono">${num(bill.total.meter,2)} m</td></tr><tr><td><b>Total Amount</b></td><td class="mono"><b>Rs ${money(bill.total.total)}</b></td></tr></table><p class="center">Thank you!</p>`;}
 function refreshReports(){const html=(db.bills||[]).slice().reverse().map(b=>`<tr><td style="font-size:12px;font-family:var(--mono);">${esc(b.date)}</td><td style="font-family:var(--mono);font-size:11px;">${esc(b.invoice)}</td><td style="color:var(--teal2);font-family:var(--mono);font-weight:800;">Rs ${money(b.total&&b.total.total)}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">No reports yet</td></tr>';if($('reportBodyMobile'))$('reportBodyMobile').innerHTML=html;}
 function reportRows(filterFn){const rows=[];(db.bills||[]).filter(filterFn).forEach(b=>{b.lines.forEach(l=>rows.push({'Date':b.date,'Time':b.time,'Invoice':b.invoice,'Item ID':l.itemId,'Item Name':l.itemName,'Gross kg':Number(num(l.grossKg,2)),'Empty Reel Deduction kg':Number(num(l.deduction,2)),'Net kg':Number(num(l.netKg,2)),'Meter':Number(num(l.meter,2)),'Yard':Number(num(l.yard,2)),'Price/Meter':l.price,'Amount':Number(num(l.amount,2))}));});return rows;}
-function exportRows(rows,filename){if(!rows.length){toast('Data නැහැ');return;}if(typeof XLSX==='undefined'){toast('XLSX load නැහැ');return;}const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Report');XLSX.writeFile(wb,filename);}
+function exportRows(rows,filename){
+  if(!rows.length){toast('Data නැහැ');return;}
+  if(typeof XLSX==='undefined'){toast('XLSX load නැහැ');return;}
+
+  const headers=[
+    'Date','Time','Invoice','Item ID','Item Name',
+    'Gross kg','Empty Reel Deduction kg','Net kg',
+    'Meter','Yard','Price/Meter','Amount'
+  ];
+  const data=[headers,...rows.map(r=>headers.map(h=>r[h]??''))];
+  const ws=XLSX.utils.aoa_to_sheet(data);
+
+  const green='16A34A';
+  const lightGreen='E8F8EE';
+  const borderGreen={style:'thin',color:{rgb:green}};
+
+  const range=XLSX.utils.decode_range(ws['!ref']);
+  for(let R=range.s.r;R<=range.e.r;R++){
+    for(let C=range.s.c;C<=range.e.c;C++){
+      const addr=XLSX.utils.encode_cell({r:R,c:C});
+      if(!ws[addr])continue;
+      ws[addr].s={
+        border:{top:borderGreen,bottom:borderGreen,left:borderGreen,right:borderGreen},
+        alignment:{vertical:'center',horizontal:R===0?'center':'left',wrapText:true}
+      };
+      if(R===0){
+        ws[addr].s.fill={fgColor:{rgb:green}};
+        ws[addr].s.font={bold:true,color:{rgb:'FFFFFF'}};
+      }else{
+        ws[addr].s.fill={fgColor:{rgb: R%2===0 ? lightGreen : 'FFFFFF'}};
+      }
+    }
+  }
+
+  ws['!cols']=[
+    {wch:12},{wch:12},{wch:20},{wch:12},{wch:24},
+    {wch:12},{wch:25},{wch:12},{wch:12},{wch:12},{wch:14},{wch:14}
+  ];
+  ws['!rows']=[{hpt:26}];
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Report');
+  XLSX.writeFile(wb,filename);
+}
 function exportDailyReport(){const d=$('dailyDate').value||todayStr();exportRows(reportRows(b=>b.date===d),`LK_Fabric_Daily_${d}.xlsx`);}
 function exportMonthlyReport(){const m=$('monthPick').value||monthStr();exportRows(reportRows(b=>String(b.date).startsWith(m)),`LK_Fabric_Monthly_${m}.xlsx`);}
 function prepareEmailReport(type){const email=(db.shop.email||'').trim();if(!email){toast('Admin → Shop → email save කරන්න');return;}const subject=encodeURIComponent(type==='daily'?'Daily Fabric Sales Report':'Monthly Fabric Sales Report');location.href=`mailto:${encodeURIComponent(email)}?subject=${subject}&body=${encodeURIComponent('Report XLSX download කර attach කරන්න.\nShop: '+(db.shop.name||''))}`;}
