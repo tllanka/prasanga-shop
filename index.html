@@ -129,10 +129,10 @@ body.admin-page .topbar-menu-btn{display:none;}
 .content{padding:0 16px 100px;margin-top:-16px;}
 
 /* ── STAT CARDS ── */
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:96px;}
 .stat-card{
-  border-radius:22px;padding:16px 16px 14px;
-  min-height:118px;position:relative;overflow:hidden;
+  border-radius:20px;padding:12px 14px 11px;
+  min-height:92px;position:relative;overflow:hidden;
   cursor:pointer;transition:all 0.18s;
 }
 .stat-card:active{transform:scale(0.97);}
@@ -148,14 +148,14 @@ body.admin-page .topbar-menu-btn{display:none;}
   background:linear-gradient(180deg,rgba(255,255,255,0.2),transparent);
   border-radius:22px 22px 0 0;pointer-events:none;
 }
-.sc-ico{font-size:24px;margin-bottom:10px;display:block;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.25));}
+.sc-ico{font-size:20px;margin-bottom:7px;display:block;filter:drop-shadow(0 3px 8px rgba(0,0,0,0.25));}
 .sc-val{
-  font-family:var(--mono);font-size:30px;font-weight:800;
+  font-family:var(--mono);font-size:25px;font-weight:800;
   color:#fff;line-height:1;
   text-shadow:0 4px 12px rgba(0,0,0,0.25);margin-bottom:6px;
 }
 .sc-label{
-  font-size:11px;font-weight:800;color:rgba(255,255,255,0.82);
+  font-size:10px;font-weight:800;color:rgba(255,255,255,0.82);
   letter-spacing:1.2px;text-transform:uppercase;font-family:var(--sans);
 }
 
@@ -363,45 +363,55 @@ select option{background:#fff;}
 
 /* ── BOTTOM NAV ── */
 .bottom-nav{
-  position:fixed;left:0;right:0;bottom:10px;
-  background:rgba(255,255,255,0.96);
+  position:fixed;left:0;right:0;bottom:8px;
+  background:rgba(255,255,255,0.98);
   border:1px solid rgba(208,221,230,0.95);
-  box-shadow:0 18px 40px rgba(160,185,200,0.34);
+  box-shadow:0 10px 28px rgba(120,145,160,0.28);
   display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;
-  padding:10px 12px 14px;z-index:10;
+  padding:8px 10px 10px;z-index:10;
   max-width:440px;margin:0 auto;align-items:end;
-  border-radius:28px;
+  border-radius:26px;overflow:visible;
+}
+.bottom-nav::before{
+  content:'';position:absolute;top:-26px;left:var(--notch-left,50%);
+  width:74px;height:74px;border-radius:50%;
+  background:var(--bg);
+  transform:translateX(-50%);
+  box-shadow:inset 0 -1px 0 rgba(208,221,230,0.85);
+  transition:left .28s cubic-bezier(.34,1.56,.64,1);
+  z-index:0;
 }
 .nav-btn{
-  border:none;background:transparent;color:#a0a9b2;
+  border:none;background:transparent;color:#9ca6ae;
   display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;
-  font-weight:800;font-size:11px;cursor:pointer;padding:0 2px 2px;
-  transition:all 0.24s cubic-bezier(.34,1.56,.64,1);font-family:var(--sans);
-  position:relative;min-height:64px;
+  font-weight:800;font-size:11px;cursor:pointer;padding:0 2px 1px;
+  transition:all 0.22s cubic-bezier(.34,1.56,.64,1);font-family:var(--sans);
+  position:relative;min-height:56px;z-index:2;
 }
 .nav-ico{
-  width:42px;height:42px;border-radius:50%;
+  width:40px;height:40px;border-radius:18px;
   display:grid;place-items:center;
-  background:transparent;font-size:22px;color:#a7a7a7;
-  transition:all 0.28s cubic-bezier(.34,1.56,.64,1);
+  background:transparent;font-size:22px;color:#9aa4ad;
+  transition:all 0.26s cubic-bezier(.34,1.56,.64,1);
   box-shadow:none;position:relative;z-index:2;
 }
-.nav-btn span:last-child{transition:all 0.24s ease;color:#a0a9b2;}
-.nav-btn:hover .nav-ico{transform:translateY(-4px);}
+.nav-btn span:last-child{transition:all 0.22s ease;color:#9ca6ae;}
+.nav-btn:hover .nav-ico{transform:translateY(-2px);}
 .nav-btn.active .nav-ico{
-  width:64px;height:64px;transform:translateY(-26px);
-  background:linear-gradient(145deg,#50d3ea,#39bfd8);color:#fff;
-  box-shadow:0 14px 30px rgba(57,191,216,0.34), inset 0 2px 4px rgba(255,255,255,0.35);
+  width:60px;height:60px;border-radius:50%;transform:translateY(-24px);
+  background:linear-gradient(145deg,#4ed8ee,#36bdd8);color:#fff;
+  box-shadow:0 10px 24px rgba(54,189,216,0.36), inset 0 2px 4px rgba(255,255,255,0.38);
 }
-.nav-btn.active span:last-child{color:#39bfd8;font-weight:900;transform:translateY(-8px);}
-.nav-btn.active{color:#39bfd8;}
+.nav-btn.active span:last-child{color:#36bdd8;font-weight:900;transform:translateY(-9px);}
+.nav-btn.active{color:#36bdd8;}
 .nav-btn.active::before{
-  content:'';position:absolute;top:-4px;left:50%;transform:translateX(-50%);
-  width:74px;height:74px;border-radius:50%;background:rgba(57,191,216,0.12);z-index:1;
+  content:'';position:absolute;top:-23px;left:50%;transform:translateX(-50%);
+  width:70px;height:70px;border-radius:50%;background:#fff;z-index:1;
+  box-shadow:0 2px 8px rgba(120,145,160,0.08);
 }
 .nav-center{transform:none;}
-.nav-center .nav-ico{width:42px;height:42px;border-radius:50%;background:transparent!important;color:#a7a7a7!important;box-shadow:none!important;}
-.nav-center.active .nav-ico,.nav-center:hover .nav-ico{box-shadow:0 14px 30px rgba(57,191,216,0.34), inset 0 2px 4px rgba(255,255,255,0.35)!important;}
+.nav-center .nav-ico{width:40px;height:40px;border-radius:18px;background:transparent!important;color:#9aa4ad!important;box-shadow:none!important;}
+.nav-center.active .nav-ico,.nav-center:hover .nav-ico{box-shadow:0 10px 24px rgba(54,189,216,0.36), inset 0 2px 4px rgba(255,255,255,0.38)!important;}
 .nav-center span:last-child{color:inherit;font-weight:800;}
 
 /* ── PAGES ── */
@@ -474,6 +484,22 @@ th{font-size:11.5px;text-align:left;color:var(--muted);padding:6px 10px;font-wei
 td{background:var(--card);border-top:1.5px solid var(--border);border-bottom:1.5px solid var(--border);padding:10px;font-weight:700;font-size:13px;vertical-align:middle;box-shadow:2px 2px 6px rgba(160,185,200,0.25),-1px -1px 4px rgba(255,255,255,0.7);}
 td:first-child{border-left:1.5px solid var(--border);border-radius:12px 0 0 12px;}
 td:last-child{border-right:1.5px solid var(--border);border-radius:0 12px 12px 0;}
+
+
+/* CONNECTION CARDS */
+.conn-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+.conn-card{
+  background:linear-gradient(145deg,#f8fbfc,#eef5f8);
+  border:1.5px solid rgba(255,255,255,.88);
+  border-radius:18px;padding:14px 12px;
+  box-shadow:var(--neu-shadow);
+}
+.conn-title{font-size:13px;font-weight:900;color:var(--ink2);display:flex;align-items:center;gap:8px;margin-bottom:8px;font-family:var(--sans);}
+.conn-status{font-size:11.5px;font-weight:800;color:var(--muted);min-height:32px;line-height:1.35;margin-bottom:10px;font-family:var(--sans);}
+.conn-status.on{color:var(--green2);}
+.conn-status.ing{color:var(--amber-d);}
+.conn-card .btn{width:100%;padding:11px 10px;border-radius:14px;font-size:12.5px;}
+@media(max-width:380px){.conn-grid{grid-template-columns:1fr;}}
 
 /* MODAL */
 .modal{position:fixed;inset:0;background:rgba(13,31,45,0.6);display:none;place-items:center;z-index:100;padding:18px;backdrop-filter:blur(10px);}
@@ -788,10 +814,28 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
   </div>
   <div id="adminSettings" class="admin-subpage">
     <div class="card">
-      <div class="admin-sub-head"><h3>🖨️ Settings</h3></div>
-      <div class="form full">
-        <div class="fg"><label>Printer Type</label><select id="printerType"><option value="browser">Browser Print</option><option value="bluetooth-note">Bluetooth printer</option></select></div>
-        <div class="fg"><label>Scale Hint</label><input id="scaleHint"></div>
+      <div class="admin-sub-head"><h3>🖨️ Connections / Settings</h3></div>
+
+      <div class="conn-grid">
+        <div class="conn-card">
+          <div class="conn-title">⚖️ Scale Connection</div>
+          <div class="conn-status" id="scaleConnStatus">Not connected</div>
+          <button class="btn btn-teal" onclick="connectScaleFromAdmin()">📡 Connect Scale</button>
+        </div>
+        <div class="conn-card">
+          <div class="conn-title">🖨️ Printer Connection</div>
+          <div class="conn-status" id="printerConnStatus">Not connected</div>
+          <button class="btn btn-purple" onclick="connectPrinterFromAdmin()">🔗 Connect Printer</button>
+        </div>
+      </div>
+
+      <div class="form full" style="margin-top:14px;">
+        <div class="fg"><label>Printer Type</label><select id="printerType"><option value="browser">Browser Print</option><option value="bluetooth-ble">Bluetooth BLE Printer</option><option value="bluetooth-note">Bluetooth printer / Native app</option></select></div>
+        <div class="fg"><label>Scale Hint</label><input id="scaleHint" placeholder="ESP32 BLE / Scale name"></div>
+      </div>
+      <div class="right-note">
+        <span class="pill" id="savedScalePill">Scale: —</span>
+        <span class="pill" id="savedPrinterPill">Printer: —</span>
       </div>
       <div class="actions"><button class="btn btn-green" onclick="saveConnectionSettings()">💾 Save</button></div>
     </div>
@@ -867,8 +911,8 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
 <script>
 const KG_TO_YARD=1.0936133;
 const DB_KEY='lk_fabric_pos_tlstyle_v1';
-let db={shop:{name:'LK Fabric Meter POS',address:'',phone:'',email:'',logo:''},items:[],bills:[],settings:{printerType:'browser',scaleHint:''}};
-let currentWeight=0,currentBill=[],selectedSaleItem=null,selectedReelItem=null,adminUnlocked=false,backupDirHandle=null;
+let db={shop:{name:'LK Fabric Meter POS',address:'',phone:'',email:'',logo:''},items:[],bills:[],settings:{printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:''}};
+let currentWeight=0,currentBill=[],selectedSaleItem=null,selectedReelItem=null,adminUnlocked=false,backupDirHandle=null,scaleDevice=null,printerDevice=null,printerCharacteristic=null;
 const $=id=>document.getElementById(id);
 const money=n=>Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const num=(n,d=3)=>Number(n||0).toFixed(d);
@@ -878,7 +922,7 @@ const invoiceNo=()=>'INV-'+new Date().toISOString().replace(/[-:.TZ]/g,'').slice
 function toast(msg){const t=$('toast');if(!t)return;t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 function esc(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 function parseWeight(text){const m=String(text||'').match(/[+-]?\d+(?:\.\d+)?/g);if(!m)return null;const ki=String(text).toLowerCase().lastIndexOf('kg');let pick=m[m.length-1];if(ki>-1){const b=String(text).slice(0,ki);const l=b.match(/[+-]?\d+(?:\.\d+)?/g);if(l)pick=l[l.length-1];}const v=Math.abs(Number(pick));return Number.isFinite(v)?v:null;}
-function loadLocal(){try{const raw=localStorage.getItem(DB_KEY);if(raw)db=JSON.parse(raw);}catch(e){}if(!db.items||!db.items.length){db.items=[{id:'IT001',name:'Premium Cotton Fabric',price:150,meterPerKg:5.5,emptyReelKg:.3,image:''},{id:'IT002',name:'School Uniform Fabric',price:120,meterPerKg:6.2,emptyReelKg:.25,image:''}];}if(!db.bills)db.bills=[];if(!db.settings)db.settings={printerType:'browser',scaleHint:''};if($('dailyDate'))$('dailyDate').value=todayStr();if($('monthPick'))$('monthPick').value=monthStr();loadShopForm();loadSettingsForm();refreshAll();updateClock();setInterval(updateClock,30000);}
+function loadLocal(){try{const raw=localStorage.getItem(DB_KEY);if(raw)db=JSON.parse(raw);}catch(e){}if(!db.items||!db.items.length){db.items=[{id:'IT001',name:'Premium Cotton Fabric',price:150,meterPerKg:5.5,emptyReelKg:.3,image:''},{id:'IT002',name:'School Uniform Fabric',price:120,meterPerKg:6.2,emptyReelKg:.25,image:''}];}if(!db.bills)db.bills=[];if(!db.settings)db.settings={printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:''};db.settings.scaleDeviceName=db.settings.scaleDeviceName||'';db.settings.printerDeviceName=db.settings.printerDeviceName||'';if($('dailyDate'))$('dailyDate').value=todayStr();if($('monthPick'))$('monthPick').value=monthStr();loadShopForm();loadSettingsForm();refreshAll();updateClock();setInterval(updateClock,30000);setTimeout(tryReconnectSavedDevices,800);}
 function saveLocal(skip=false){localStorage.setItem(DB_KEY,JSON.stringify(db));refreshAll();if(!skip)autoBackup();}
 function updateClock(){
   const now=new Date();
@@ -888,7 +932,27 @@ function updateClock(){
 function refreshAll(){if($('heroTitle'))$('heroTitle').textContent=db.shop.name||'LK FABRIC POS';updateHeaderLogo();refreshSelects();refreshItemList();refreshReports();refreshAbout();updateLiveCalc();}
 function updateHeaderLogo(){const img=$('brandLogoImg'),emo=$('brandLogoEmoji');if(!img||!emo)return;if(db.shop.logo){img.src=db.shop.logo;img.style.display='block';emo.style.display='none';}else{img.removeAttribute('src');img.style.display='none';emo.style.display='inline';}}
 function refreshAbout(){if($('aboutShopName'))$('aboutShopName').textContent=db.shop.name||'LK Fabric Meter POS';if($('aboutShopDisplay'))$('aboutShopDisplay').textContent=db.shop.name||'—';if($('aboutPhoneDisplay'))$('aboutPhoneDisplay').textContent=db.shop.phone||'—';if($('aboutEmailDisplay'))$('aboutEmailDisplay').textContent=db.shop.email||'—';}
-function showPage(id,btn){document.body.classList.toggle('admin-page',id==='admin');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));const page=$(id);if(page)page.classList.add('active');document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');else{const map={reports:0,about:1,main:2,admin:4};const nb=document.querySelectorAll('.nav-btn');if(map[id]!==undefined&&nb[map[id]])nb[map[id]].classList.add('active');}window.scrollTo({top:0,behavior:'smooth'});}
+function updateBottomNotch(){
+  const nav=document.querySelector('.bottom-nav'),active=document.querySelector('.nav-btn.active');
+  if(nav&&active){
+    const nr=nav.getBoundingClientRect(),ar=active.getBoundingClientRect();
+    nav.style.setProperty('--notch-left',((ar.left+ar.width/2)-nr.left)+'px');
+  }
+}
+function showPage(id,btn){
+  document.body.classList.toggle('admin-page',id==='admin');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const page=$(id);if(page)page.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  else{
+    const map={reports:0,about:1,main:2,admin:4};
+    const nb=document.querySelectorAll('.nav-btn');
+    if(map[id]!==undefined&&nb[map[id]])nb[map[id]].classList.add('active');
+  }
+  updateBottomNotch();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
 function openAdminLogin(){if(adminUnlocked){showPage('admin');showAdminSection('adminShop');return;}$('adminModal').classList.add('show');pinClear();}
 function closeAdminLogin(){$('adminModal').classList.remove('show');pinClear();}
 function updatePinDots(){const val=($('adminPass')&&$('adminPass').value)||'';document.querySelectorAll('#pinDots .pin-dot').forEach((d,i)=>d.classList.toggle('filled',i<val.length));}
@@ -897,7 +961,11 @@ function pinBack(){const p=$('adminPass');if(!p)return;p.value=p.value.slice(0,-
 function pinClear(){const p=$('adminPass');if(p)p.value='';updatePinDots();}
 function showAdminSection(id,tabBtn){showPage('admin');document.querySelectorAll('#admin .admin-subpage').forEach(p=>p.classList.remove('active'));if($(id))$(id).classList.add('active');document.querySelectorAll('#admin .admin-tab').forEach(t=>t.classList.remove('active'));if(tabBtn)tabBtn.classList.add('active');else{const map={adminShop:0,adminItems:1,adminPrice:2,adminReel:3,adminBackup:4,adminSettings:5,adminList:6};const tabs=document.querySelectorAll('#admin .admin-tab');if(tabs[map[id]||0])tabs[map[id]||0].classList.add('active');}window.scrollTo({top:0,behavior:'smooth'});}
 function adminLogin(){if($('adminPass').value==='1990'){adminUnlocked=true;closeAdminLogin();showPage('admin');showAdminSection('adminShop');toast('Admin unlocked ✓');}else{toast('PIN වැරදියි');pinClear();}}
-function setBleUI(s,lbl){const el=$('ble-indicator');if(el)el.className='ble-dot'+(s==='on'?' on':s==='ing'?' ing':'');const l=$('ble-label-main');if(l)l.textContent=lbl||'';}
+function setBleUI(s,lbl){
+  const el=$('ble-indicator');if(el)el.className='ble-dot'+(s==='on'?' on':s==='ing'?' ing':'');
+  const l=$('ble-label-main');if(l)l.textContent=lbl||'';
+  const st=$('scaleConnStatus');if(st){st.textContent=lbl||'';st.className='conn-status '+(s==='on'?'on':s==='ing'?'ing':'');}
+}
 function setWeight(v){currentWeight=Number(v||0);['weightDisplay'].forEach(id=>{if($(id))$(id).textContent=num(currentWeight,3);});if($('mainManualWeight'))$('mainManualWeight').value=num(currentWeight,3);if($('reelWeight'))$('reelWeight').value=num(currentWeight,3);updateLiveCalc();}
 function simulateWeight(){setWeight((Math.random()*12+1).toFixed(3));toast('Test weight set ✓');}
 function decodeBleValue(value){
@@ -922,57 +990,134 @@ function handleBleWeightValue(value){
   const w=decodeBleValue(value);
   if(w!==null)setWeight(w);
 }
-async function connectBluetooth(){
-  if(!navigator.bluetooth){toast('Android Chrome/Edge වලින් open කරන්න');return;}
+const BLE_UART_SERVICES=[
+  'battery_service',0x181d,0x181a,0xffe0,0xfff0,
+  '0000ffe0-0000-1000-8000-00805f9b34fb',
+  '0000fff0-0000-1000-8000-00805f9b34fb',
+  '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
+];
+function bluetoothReady(){
+  if(!navigator.bluetooth){toast('Android Chrome/Edge වලින් open කරන්න');return false;}
   if(location.protocol!=='https:' && location.hostname!=='localhost' && location.hostname!=='127.0.0.1'){
-    toast('Bluetooth වැඩ කරන්න HTTPS හෝ localhost අවශ්‍යයි');return;
+    toast('Bluetooth වැඩ කරන්න HTTPS හෝ localhost අවශ්‍යයි');return false;
   }
-  const servicesToTry=[
-    'battery_service',0x181d,0x181a,0xffe0,0xfff0,
-    '0000ffe0-0000-1000-8000-00805f9b34fb',
-    '0000fff0-0000-1000-8000-00805f9b34fb',
-    '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
-  ];
+  return true;
+}
+async function connectBluetooth(){return connectScaleFromAdmin();}
+async function connectScaleFromAdmin(){
+  if(!bluetoothReady())return;
   try{
-    setBleUI('ing','Select scale...');
+    setBleUI('ing','Select scale / ESP32...');
     const device=await navigator.bluetooth.requestDevice({
       acceptAllDevices:true,
-      optionalServices:servicesToTry
+      optionalServices:BLE_UART_SERVICES
     });
-    setBleUI('ing','Connecting...');
-    device.addEventListener('gattserverdisconnected',()=>setBleUI('off','Tap to connect scale'));
-    const server=await device.gatt.connect();
-    const services=await server.getPrimaryServices();
-    let found=false;
-    for(const service of services){
-      let chars=[];
-      try{chars=await service.getCharacteristics();}catch(e){continue;}
-      for(const ch of chars){
-        try{
-          if(ch.properties.notify||ch.properties.indicate){
-            await ch.startNotifications();
-            ch.addEventListener('characteristicvaluechanged',e=>handleBleWeightValue(e.target.value));
-            found=true;
-          }
-          if(ch.properties.read){
-            const v=await ch.readValue();
-            handleBleWeightValue(v);
-            found=true;
-          }
-        }catch(e){}
-      }
-    }
-    if(found){
-      setBleUI('on','Connected: '+(device.name||'Scale'));
-      toast('Scale connected ✓');
-      return;
-    }
-    setBleUI('off','Tap to connect scale');
-    toast('Scale data characteristic හමු නොවුණා');
+    await attachScaleDevice(device,true);
   }catch(e){
     setBleUI('off','Tap to connect scale');
-    if(e.name!=='NotFoundError')toast('BT: '+(e.message||e));
+    if(e.name!=='NotFoundError')toast('Scale BT: '+(e.message||e));
   }
+}
+async function attachScaleDevice(device,saveName){
+  scaleDevice=device;
+  setBleUI('ing','Connecting...');
+  device.addEventListener('gattserverdisconnected',()=>setBleUI('off','Scale disconnected'));
+  const server=await device.gatt.connect();
+  const services=await server.getPrimaryServices();
+  let found=false;
+  for(const service of services){
+    let chars=[];
+    try{chars=await service.getCharacteristics();}catch(e){continue;}
+    for(const ch of chars){
+      try{
+        if(ch.properties.notify||ch.properties.indicate){
+          await ch.startNotifications();
+          ch.addEventListener('characteristicvaluechanged',e=>handleBleWeightValue(e.target.value));
+          found=true;
+        }
+        if(ch.properties.read){
+          const v=await ch.readValue();
+          handleBleWeightValue(v);
+          found=true;
+        }
+      }catch(e){}
+    }
+  }
+  if(found){
+    const nm=device.name||'BLE Scale';
+    db.settings.scaleDeviceName=nm;
+    if(saveName)saveLocal(true);
+    updateConnectionPills();
+    setBleUI('on','Scale: '+nm);
+    toast('Scale connected ✓');
+    return true;
+  }
+  setBleUI('off','Scale data not found');
+  toast('Scale data characteristic හමු නොවුණා');
+  return false;
+}
+async function connectPrinterFromAdmin(){
+  if(!bluetoothReady())return;
+  try{
+    const st=$('printerConnStatus');if(st){st.textContent='Select printer...';st.className='conn-status ing';}
+    const device=await navigator.bluetooth.requestDevice({
+      acceptAllDevices:true,
+      optionalServices:[0xffe0,0xfff0,'0000ffe0-0000-1000-8000-00805f9b34fb','0000fff0-0000-1000-8000-00805f9b34fb','6e400001-b5a3-f393-e0a9-e50e24dcca9e']
+    });
+    await attachPrinterDevice(device,true);
+  }catch(e){
+    const st=$('printerConnStatus');if(st){st.textContent='Printer not connected';st.className='conn-status';}
+    if(e.name!=='NotFoundError')toast('Printer BT: '+(e.message||e));
+  }
+}
+async function attachPrinterDevice(device,saveName){
+  printerDevice=device;
+  const st=$('printerConnStatus');if(st){st.textContent='Connecting...';st.className='conn-status ing';}
+  device.addEventListener('gattserverdisconnected',()=>{const s=$('printerConnStatus');if(s){s.textContent='Printer disconnected';s.className='conn-status';}});
+  const server=await device.gatt.connect();
+  const services=await server.getPrimaryServices();
+  printerCharacteristic=null;
+  for(const service of services){
+    let chars=[];
+    try{chars=await service.getCharacteristics();}catch(e){continue;}
+    for(const ch of chars){
+      if(ch.properties.write||ch.properties.writeWithoutResponse){printerCharacteristic=ch;break;}
+    }
+    if(printerCharacteristic)break;
+  }
+  if(printerCharacteristic){
+    const nm=device.name||'BLE Printer';
+    db.settings.printerDeviceName=nm;db.settings.printerType='bluetooth-ble';
+    if($('printerType'))$('printerType').value='bluetooth-ble';
+    if(saveName)saveLocal(true);
+    updateConnectionPills();
+    if(st){st.textContent='Printer: '+nm;st.className='conn-status on';}
+    toast('Printer connected ✓');
+    return true;
+  }
+  if(st){st.textContent='Printer write service not found';st.className='conn-status';}
+  toast('Printer write characteristic හමු නොවුණා');
+  return false;
+}
+async function tryReconnectSavedDevices(){
+  if(!navigator.bluetooth||!navigator.bluetooth.getDevices)return;
+  try{
+    const devices=await navigator.bluetooth.getDevices();
+    if(db.settings.scaleDeviceName){
+      const d=devices.find(x=>(x.name||'')===db.settings.scaleDeviceName);
+      if(d&&!d.gatt.connected)attachScaleDevice(d,false).catch(()=>{});
+    }
+    if(db.settings.printerDeviceName){
+      const p=devices.find(x=>(x.name||'')===db.settings.printerDeviceName);
+      if(p&&!p.gatt.connected)attachPrinterDevice(p,false).catch(()=>{});
+    }
+  }catch(e){}
+}
+function updateConnectionPills(){
+  if($('savedScalePill'))$('savedScalePill').textContent='Scale: '+(db.settings.scaleDeviceName||'—');
+  if($('savedPrinterPill'))$('savedPrinterPill').textContent='Printer: '+(db.settings.printerDeviceName||'—');
+  if($('scaleConnStatus') && !$('scaleConnStatus').classList.contains('on'))$('scaleConnStatus').textContent=db.settings.scaleDeviceName?'Saved: '+db.settings.scaleDeviceName:'Not connected';
+  if($('printerConnStatus') && !$('printerConnStatus').classList.contains('on'))$('printerConnStatus').textContent=db.settings.printerDeviceName?'Saved: '+db.settings.printerDeviceName:'Not connected';
 }
 function findItem(id){return db.items.find(x=>x.id===id);}
 function refreshSelects(){const opts='<option value="">-- Select Item --</option>'+db.items.map(x=>`<option value="${esc(x.id)}">${esc(x.id)} - ${esc(x.name||'')}</option>`).join('');['priceItemSelect','reelItemSelect','mainItemSelect'].forEach(id=>{if($(id))$(id).innerHTML=opts;});}
@@ -1012,7 +1157,31 @@ function updateLiveCalc(){
 }
 function addSaleLine(){if(!selectedSaleItem){toast('Item select කරන්න');return;}if(currentWeight<=0){toast('Weight > 0 විය යුතුයි');return;}const c=calcForItem(selectedSaleItem,currentWeight);currentBill.push({itemId:selectedSaleItem.id,itemName:selectedSaleItem.name,price:Number(selectedSaleItem.price),meterPerKg:Number(selectedSaleItem.meterPerKg),...c});updateLiveCalc();toast('Item added ✓');}
 function billTotals(lines=currentBill){return lines.reduce((a,l)=>{a.gross+=l.grossKg;a.net+=l.netKg;a.meter+=l.meter;a.yard+=l.yard;a.total+=l.amount;return a;},{gross:0,net:0,meter:0,yard:0,total:0});}
-function finishBill(){if(!currentBill.length){toast('Item add කරන්න');return;}const inv=invoiceNo();const now=new Date();const total=billTotals();const bill={invoice:inv,date:todayStr(),time:now.toLocaleTimeString(),customer:'Walk-in',lines:currentBill,total};db.bills.push(bill);saveLocal();buildPrintSlip(bill);currentBill=[];updateLiveCalc();setTimeout(()=>window.print(),150);toast('Bill saved ✓');}
+function finishBill(){
+  if(!currentBill.length){toast('Item add කරන්න');return;}
+  const inv=invoiceNo();const now=new Date();const total=billTotals();
+  const bill={invoice:inv,date:todayStr(),time:now.toLocaleTimeString(),customer:'Walk-in',lines:currentBill,total};
+  db.bills.push(bill);saveLocal();buildPrintSlip(bill);currentBill=[];updateLiveCalc();
+  if(db.settings.printerType==='bluetooth-ble'&&printerCharacteristic){printBleReceipt(bill).catch(()=>window.print());}
+  else setTimeout(()=>window.print(),150);
+  toast('Bill saved ✓');
+}
+async function printBleReceipt(bill){
+  if(!printerCharacteristic){toast('Printer connect කරන්න');return;}
+  const line='--------------------------------\n';
+  let out=(db.shop.name||'LK Fabric Meter POS')+'\n'+(db.shop.phone||'')+'\n'+line;
+  out+='Invoice: '+bill.invoice+'\nDate: '+bill.date+' '+bill.time+'\n'+line;
+  bill.lines.forEach(l=>{out+=l.itemId+' '+l.itemName+'\n'+num(l.grossKg,3)+'kg  '+num(l.meter,2)+'m  Rs '+money(l.amount)+'\n';});
+  out+=line+'TOTAL: Rs '+money(bill.total.total)+'\nThank you!\n\n\n';
+  const data=new TextEncoder().encode(out);
+  for(let i=0;i<data.length;i+=160){
+    const part=data.slice(i,i+160);
+    if(printerCharacteristic.writeValueWithoutResponse)await printerCharacteristic.writeValueWithoutResponse(part);
+    else await printerCharacteristic.writeValue(part);
+    await new Promise(r=>setTimeout(r,35));
+  }
+  toast('Bluetooth print sent ✓');
+}
 function buildPrintSlip(bill){const lines=bill.lines.map(l=>`<tr><td>${esc(l.itemId)} ${esc(l.itemName)}</td><td class="mono">${num(l.grossKg)}</td><td class="mono">${num(l.meter,2)}</td><td class="mono">${money(l.amount)}</td></tr>`).join('');$('printSlip').innerHTML=`<h2>${esc(db.shop.name||'LK Fabric Meter POS')}</h2><div class="center">${esc(db.shop.address||'')} ${esc(db.shop.phone||'')}</div><hr><table><tr><td>Invoice</td><td class="mono">${esc(bill.invoice)}</td></tr><tr><td>Date</td><td>${esc(bill.date)} ${esc(bill.time)}</td></tr></table><br><table><thead><tr><th>Item</th><th>kg</th><th>Meter</th><th>Amount</th></tr></thead><tbody>${lines}</tbody></table><br><table><tr><td>Total Meter</td><td class="mono">${num(bill.total.meter,2)} m</td></tr><tr><td><b>Total Amount</b></td><td class="mono"><b>Rs ${money(bill.total.total)}</b></td></tr></table><p class="center">Thank you!</p>`;}
 function refreshReports(){const html=(db.bills||[]).slice().reverse().map(b=>`<tr><td style="font-size:12px;font-family:var(--mono);">${esc(b.date)}</td><td style="font-family:var(--mono);font-size:11px;">${esc(b.invoice)}</td><td style="color:var(--teal2);font-family:var(--mono);font-weight:800;">Rs ${money(b.total&&b.total.total)}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">No reports yet</td></tr>';if($('reportBodyMobile'))$('reportBodyMobile').innerHTML=html;}
 function reportRows(filterFn){const rows=[];(db.bills||[]).filter(filterFn).forEach(b=>{b.lines.forEach(l=>rows.push({'Date':b.date,'Time':b.time,'Invoice':b.invoice,'Item ID':l.itemId,'Item Name':l.itemName,'Gross kg':Number(num(l.grossKg)),'Deduction kg':Number(num(l.deduction)),'Net kg':Number(num(l.netKg)),'Meter':Number(num(l.meter,2)),'Yard':Number(num(l.yard,2)),'Price/Meter':l.price,'Amount':Number(num(l.amount,2))}));});return rows;}
@@ -1034,15 +1203,23 @@ function updatePrice(){const item=findItem($('priceItemId').value.trim());if(!it
 function loadReelById(){const id=$('reelItemId').value.trim();selectedReelItem=findItem(id)||null;if(selectedReelItem&&$('reelItemSelect'))$('reelItemSelect').value=id;}
 function loadReelBySelect(){const id=$('reelItemSelect').value;if($('reelItemId'))$('reelItemId').value=id;selectedReelItem=findItem(id)||null;}
 function saveReelDeduction(){loadReelById();if(!selectedReelItem){toast('Item select කරන්න');return;}selectedReelItem.emptyReelKg=Number(currentWeight||0);saveLocal();toast('Reel weight saved ✓');}
-function loadSettingsForm(){if($('printerType'))$('printerType').value=db.settings.printerType||'browser';if($('scaleHint'))$('scaleHint').value=db.settings.scaleHint||'';}
-function saveConnectionSettings(){db.settings.printerType=$('printerType').value;db.settings.scaleHint=$('scaleHint').value.trim();saveLocal();toast('Settings saved ✓');}
+function loadSettingsForm(){
+  if($('printerType'))$('printerType').value=db.settings.printerType||'browser';
+  if($('scaleHint'))$('scaleHint').value=db.settings.scaleHint||'';
+  updateConnectionPills();
+}
+function saveConnectionSettings(){
+  db.settings.printerType=$('printerType').value;
+  db.settings.scaleHint=$('scaleHint').value.trim();
+  saveLocal();updateConnectionPills();toast('Settings saved ✓');
+}
 async function selectBackupFolder(){if(!window.showDirectoryPicker){downloadJsonBackup();return;}try{backupDirHandle=await window.showDirectoryPicker();await manualBackup();}catch(e){toast('Cancelled');}}
 async function autoBackup(){if(!backupDirHandle)return;try{const file=await backupDirHandle.getFileHandle('LK_Fabric_POS_Backup.json',{create:true});const w=await file.createWritable();await w.write(JSON.stringify(db,null,2));await w.close();}catch(e){}}
 async function manualBackup(){if(backupDirHandle){await autoBackup();toast('Backup saved ✓');}else{downloadJsonBackup();toast('Downloaded ✓');}}
 function downloadJsonBackup(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='LK_Fabric_POS_Backup.json';a.click();URL.revokeObjectURL(a.href);}
 function restoreFromFile(){$('restoreFile').click();}
 function handleRestoreFile(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.items||!d.bills)throw new Error('Invalid');db=d;saveLocal(true);loadShopForm();loadSettingsForm();refreshAll();toast('Restore done ✓');}catch(err){toast('Restore failed');}};r.readAsText(f);}
-window.addEventListener('DOMContentLoaded',loadLocal);
+window.addEventListener('resize',updateBottomNotch);window.addEventListener('DOMContentLoaded',()=>{loadLocal();setTimeout(updateBottomNotch,120);});
 </script>
 </body>
 </html>
