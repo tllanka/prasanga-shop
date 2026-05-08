@@ -1152,11 +1152,11 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
       <div class="form full" style="margin-top:14px;">
         <div class="fg"><label>Printer Type</label><select id="printerType"><option value="browser">Browser Print</option><option value="bluetooth-ble">Bluetooth BLE Printer</option><option value="bluetooth-note">Bluetooth printer / Native app</option></select></div>
         <div class="fg"><label>Scale Hint</label><input id="scaleHint" placeholder="ESP32 BLE / Scale name"></div>
-        <div class="fg"><label>Google Apps Script Web App URL</label><input id="scriptUrl" placeholder="https://script.google.com/macros/s/....../exec"></div>
+        <div class="fg"><label>Google Apps Script Web App URL</label><input id="scriptUrl" placeholder="Built-in Apps Script URL"></div>
       </div>
       <div class="script-url-box">
         <button class="btn btn-amber" onclick="testAppsScriptEmail()">📧 Test Email Script</button>
-        <div class="email-status-note">Internet තියෙන විට Email button එකෙන් Excel file එක Apps Script හරහා saved email address එකට send කරයි.</div>
+        <div class="email-status-note">Apps Script URL එක code එකටම add කරලා ඇත. වෙන phone එකකින් open කළත් නැවත URL දාන්න අවශ්‍ය නැහැ.</div>
       </div>
       <div class="right-note">
         <span class="pill" id="savedScalePill">Scale: —</span>
@@ -1265,6 +1265,7 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
 <script>
 const KG_TO_YARD=1.0936133;
 const DB_KEY='lk_fabric_pos_tlstyle_v1';
+const DEFAULT_SCRIPT_URL='https://script.google.com/macros/s/AKfycbzWVSAWeYJ4KwQBpAnviNqE1eEXJBoAwirprp6qxTJznYnRwW2QF6iI3f_EVh6EEZLzJw/exec';
 let db={shop:{name:'LK Fabric Meter POS',address:'',phone:'',email:'',logo:''},items:[],bills:[],settings:{printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:''}};
 let currentWeight=0,currentBill=[],selectedSaleItem=null,selectedReelItem=null,adminUnlocked=false,backupDirHandle=null,scaleDevice=null,printerDevice=null,printerCharacteristic=null,itemPage=1;
 const ITEMS_PER_PAGE=5;
@@ -1338,7 +1339,7 @@ function markAutoBackupDone(){
 }
 function esc(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 function parseWeight(text){const m=String(text||'').match(/[+-]?\d+(?:\.\d+)?/g);if(!m)return null;const ki=String(text).toLowerCase().lastIndexOf('kg');let pick=m[m.length-1];if(ki>-1){const b=String(text).slice(0,ki);const l=b.match(/[+-]?\d+(?:\.\d+)?/g);if(l)pick=l[l.length-1];}const v=Math.abs(Number(pick));return Number.isFinite(v)?v:null;}
-function loadLocal(){try{const raw=localStorage.getItem(DB_KEY);if(raw)db=JSON.parse(raw);}catch(e){}if(!db.items||!db.items.length){db.items=[{id:'IT001',name:'Premium Cotton Fabric',price:150,meterPerKg:5.5,emptyReelKg:.3,image:''},{id:'IT002',name:'School Uniform Fabric',price:120,meterPerKg:6.2,emptyReelKg:.25,image:''}];}if(!db.bills)db.bills=[];if(!db.reelHistory)db.reelHistory=[];ensureDailyStats();if(!db.settings)db.settings={printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:'',lastBackupAt:'',scriptUrl:''};db.settings.scaleDeviceName=db.settings.scaleDeviceName||'';db.settings.printerDeviceName=db.settings.printerDeviceName||'';db.settings.lastBackupAt=db.settings.lastBackupAt||'';db.settings.scriptUrl=db.settings.scriptUrl||'';if($('dailyDate'))$('dailyDate').value=todayStr();if($('monthPick'))$('monthPick').value=monthStr();loadShopForm();loadSettingsForm();refreshAll();updateClock();setInterval(updateClock,30000);setTimeout(tryReconnectSavedDevices,800);}
+function loadLocal(){try{const raw=localStorage.getItem(DB_KEY);if(raw)db=JSON.parse(raw);}catch(e){}if(!db.items||!db.items.length){db.items=[{id:'IT001',name:'Premium Cotton Fabric',price:150,meterPerKg:5.5,emptyReelKg:.3,image:''},{id:'IT002',name:'School Uniform Fabric',price:120,meterPerKg:6.2,emptyReelKg:.25,image:''}];}if(!db.bills)db.bills=[];if(!db.reelHistory)db.reelHistory=[];ensureDailyStats();if(!db.settings)db.settings={printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:'',lastBackupAt:'',scriptUrl:DEFAULT_SCRIPT_URL};db.settings.scaleDeviceName=db.settings.scaleDeviceName||'';db.settings.printerDeviceName=db.settings.printerDeviceName||'';db.settings.lastBackupAt=db.settings.lastBackupAt||'';db.settings.scriptUrl=db.settings.scriptUrl||DEFAULT_SCRIPT_URL;if($('dailyDate'))$('dailyDate').value=todayStr();if($('monthPick'))$('monthPick').value=monthStr();loadShopForm();loadSettingsForm();refreshAll();updateClock();setInterval(updateClock,30000);setTimeout(tryReconnectSavedDevices,800);}
 function saveLocal(skip=false){
   localStorage.setItem(DB_KEY,JSON.stringify(db));
   refreshAll();
@@ -2071,7 +2072,7 @@ function loadSettingsForm(){
 function saveConnectionSettings(){
   db.settings.printerType=$('printerType').value;
   db.settings.scaleHint=$('scaleHint').value.trim();
-  if($('scriptUrl'))db.settings.scriptUrl=$('scriptUrl').value.trim();
+  if($('scriptUrl'))db.settings.scriptUrl=$('scriptUrl').value.trim()||DEFAULT_SCRIPT_URL;
   saveLocal();updateConnectionPills();toast('Settings saved ✓');
 }
 async function selectBackupFolder(){if(!window.showDirectoryPicker){downloadJsonBackup();return;}try{backupDirHandle=await window.showDirectoryPicker();await manualBackup();}catch(e){toast('Cancelled');}}
