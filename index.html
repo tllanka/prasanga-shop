@@ -726,6 +726,17 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
 .receipt-preview-58 .r-yard{text-align:center;font-family:var(--mono);font-size:26px;font-weight:900;}
 .receipt-preview-58 .r-thanks{text-align:center;font-weight:900;margin-top:10px;font-size:13px;}
 
+
+/* --- V13: reel history table --- */
+.reel-history-wrap{margin-top:14px;}
+.reel-history-table table{min-width:620px;}
+.reel-source-pill{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:4px 8px;border-radius:999px;font-size:11px;font-weight:900;
+  background:#e0f2fe;color:#0369a1;font-family:var(--sans);
+}
+.reel-source-pill.manual{background:#fef3c7;color:#a16207;}
+
 </style>
 </head>
 <body>
@@ -1059,6 +1070,18 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
       </div>
       <div class="actions"><button class="btn btn-purple" onclick="saveReelDeduction()">💾 Save Reel kg</button></div>
     </div>
+
+    <div class="card reel-history-wrap" style="padding:0;overflow:hidden;">
+      <div class="admin-sub-head" style="padding:16px 16px 12px;margin-bottom:0;"><h3>⚖️ Reel History</h3></div>
+      <div class="table-shell reel-history-table">
+        <table>
+          <thead>
+            <tr><th>Date</th><th>Time</th><th>Item ID</th><th>Item Name</th><th>Reel kg</th><th>Source</th></tr>
+          </thead>
+          <tbody id="reelHistoryBody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
   <div id="adminBackup" class="admin-subpage">
     <div class="card">
@@ -1213,7 +1236,7 @@ function markAutoBackupDone(){
 }
 function esc(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 function parseWeight(text){const m=String(text||'').match(/[+-]?\d+(?:\.\d+)?/g);if(!m)return null;const ki=String(text).toLowerCase().lastIndexOf('kg');let pick=m[m.length-1];if(ki>-1){const b=String(text).slice(0,ki);const l=b.match(/[+-]?\d+(?:\.\d+)?/g);if(l)pick=l[l.length-1];}const v=Math.abs(Number(pick));return Number.isFinite(v)?v:null;}
-function loadLocal(){try{const raw=localStorage.getItem(DB_KEY);if(raw)db=JSON.parse(raw);}catch(e){}if(!db.items||!db.items.length){db.items=[{id:'IT001',name:'Premium Cotton Fabric',price:150,meterPerKg:5.5,emptyReelKg:.3,image:''},{id:'IT002',name:'School Uniform Fabric',price:120,meterPerKg:6.2,emptyReelKg:.25,image:''}];}if(!db.bills)db.bills=[];if(!db.settings)db.settings={printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:'',lastBackupAt:''};db.settings.scaleDeviceName=db.settings.scaleDeviceName||'';db.settings.printerDeviceName=db.settings.printerDeviceName||'';db.settings.lastBackupAt=db.settings.lastBackupAt||'';if($('dailyDate'))$('dailyDate').value=todayStr();if($('monthPick'))$('monthPick').value=monthStr();loadShopForm();loadSettingsForm();refreshAll();updateClock();setInterval(updateClock,30000);setTimeout(tryReconnectSavedDevices,800);}
+function loadLocal(){try{const raw=localStorage.getItem(DB_KEY);if(raw)db=JSON.parse(raw);}catch(e){}if(!db.items||!db.items.length){db.items=[{id:'IT001',name:'Premium Cotton Fabric',price:150,meterPerKg:5.5,emptyReelKg:.3,image:''},{id:'IT002',name:'School Uniform Fabric',price:120,meterPerKg:6.2,emptyReelKg:.25,image:''}];}if(!db.bills)db.bills=[];if(!db.reelHistory)db.reelHistory=[];if(!db.settings)db.settings={printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:'',lastBackupAt:''};db.settings.scaleDeviceName=db.settings.scaleDeviceName||'';db.settings.printerDeviceName=db.settings.printerDeviceName||'';db.settings.lastBackupAt=db.settings.lastBackupAt||'';if($('dailyDate'))$('dailyDate').value=todayStr();if($('monthPick'))$('monthPick').value=monthStr();loadShopForm();loadSettingsForm();refreshAll();updateClock();setInterval(updateClock,30000);setTimeout(tryReconnectSavedDevices,800);}
 function saveLocal(skip=false){
   localStorage.setItem(DB_KEY,JSON.stringify(db));
   refreshAll();
@@ -1224,7 +1247,7 @@ function updateClock(){
   if($('clockText'))$('clockText').textContent=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
   if($('clockDate'))$('clockDate').textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'2-digit',year:'numeric'});
 }
-function refreshAll(){if($('heroTitle'))$('heroTitle').textContent=db.shop.name||'LK FABRIC POS';updateHeaderLogo();refreshSelects();refreshItemList();refreshReports();refreshAbout();updateLiveCalc();updateBackupUI();}
+function refreshAll(){if($('heroTitle'))$('heroTitle').textContent=db.shop.name||'LK FABRIC POS';updateHeaderLogo();refreshSelects();refreshItemList();refreshReelHistory();refreshReports();refreshAbout();updateLiveCalc();updateBackupUI();}
 function updateHeaderLogo(){const img=$('brandLogoImg'),emo=$('brandLogoEmoji');if(!img||!emo)return;if(db.shop.logo){img.src=db.shop.logo;img.style.display='block';emo.style.display='none';}else{img.removeAttribute('src');img.style.display='none';emo.style.display='inline';}}
 function refreshAbout(){if($('aboutShopName'))$('aboutShopName').textContent=db.shop.name||'LK Fabric Meter POS';if($('aboutShopDisplay'))$('aboutShopDisplay').textContent=db.shop.name||'—';if($('aboutPhoneDisplay'))$('aboutPhoneDisplay').textContent=db.shop.phone||'—';if($('aboutEmailDisplay'))$('aboutEmailDisplay').textContent=db.shop.email||'—';}
 function updateBottomNotch(){
@@ -1451,12 +1474,12 @@ function updateLiveCalc(){
   if($('itemCountDisplay'))$('itemCountDisplay').textContent=currentBill.length+' Roll';
   updateItemShowcase();
 }
-function addSaleLine(){if(!selectedSaleItem){toast('Item select කරන්න');return;}if(currentWeight<=0){toast('Weight > 0 විය යුතුයි');return;}const c=calcForItem(selectedSaleItem,currentWeight);currentBill.push({itemId:selectedSaleItem.id,itemName:selectedSaleItem.name,price:Number(selectedSaleItem.price),meterPerKg:Number(selectedSaleItem.meterPerKg),...c});updateLiveCalc();toast('Item added ✓');}
+function addSaleLine(){if(!selectedSaleItem){toast('Item select කරන්න');return;}if(currentWeight<=0){toast('Weight > 0 විය යුතුයි');return;}const c=calcForItem(selectedSaleItem,currentWeight);currentBill.push({itemId:selectedSaleItem.id,itemName:selectedSaleItem.name,price:Number(selectedSaleItem.price),meterPerKg:Number(selectedSaleItem.meterPerKg),emptyReelDeductionKg:Number(c.deduction||0),...c});updateLiveCalc();toast('Item added ✓');}
 function billTotals(lines=currentBill){return lines.reduce((a,l)=>{a.gross+=l.grossKg;a.net+=l.netKg;a.meter+=l.meter;a.yard+=l.yard;a.total+=l.amount;return a;},{gross:0,net:0,meter:0,yard:0,total:0});}
 function finishBill(){
   if(selectedSaleItem && currentWeight>0){
     const c=calcForItem(selectedSaleItem,currentWeight);
-    currentBill.push({itemId:selectedSaleItem.id,itemName:selectedSaleItem.name,price:Number(selectedSaleItem.price),meterPerKg:Number(selectedSaleItem.meterPerKg),...c});
+    currentBill.push({itemId:selectedSaleItem.id,itemName:selectedSaleItem.name,price:Number(selectedSaleItem.price),meterPerKg:Number(selectedSaleItem.meterPerKg),emptyReelDeductionKg:Number(c.deduction||0),...c});
   }
   if(!currentBill.length){toast('Item select කර weight එක ලැබුණාද බලන්න');return;}
   const inv=invoiceNo();const now=new Date();const total=billTotals();
@@ -1521,7 +1544,32 @@ function buildPrintSlip(bill){
   `;
 }
 function refreshReports(){const html=(db.bills||[]).slice().reverse().map(b=>`<tr><td style="font-size:12px;font-family:var(--mono);">${esc(b.date)}</td><td style="font-family:var(--mono);font-size:11px;">${esc(b.invoice)}</td><td style="color:var(--teal2);font-family:var(--mono);font-weight:800;">Rs ${money(b.total&&b.total.total)}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">No reports yet</td></tr>';if($('reportBodyMobile'))$('reportBodyMobile').innerHTML=html;}
-function reportRows(filterFn){const rows=[];(db.bills||[]).filter(filterFn).forEach(b=>{b.lines.forEach(l=>rows.push({'Date':b.date,'Time':b.time,'Invoice':b.invoice,'Item ID':l.itemId,'Item Name':l.itemName,'Gross kg':Number(num(l.grossKg,2)),'Empty Reel Deduction kg':Number(num(l.deduction,2)),'Net kg':Number(num(l.netKg,2)),'Meter':Number(num(l.meter,2)),'Yard':Number(num(l.yard,2)),'Price/Meter':l.price,'Amount':Number(num(l.amount,2))}));});return rows;}
+function reportRows(filterFn){
+  const rows=[];
+  (db.bills||[]).filter(filterFn).forEach(b=>{
+    b.lines.forEach(l=>{
+      const item=findItem(l.itemId)||{};
+      const deduction=Number(l.deduction ?? l.emptyReelDeductionKg ?? item.emptyReelKg ?? 0);
+      const gross=Number(l.grossKg||0);
+      const net=Number(l.netKg ?? Math.max(0,gross-deduction));
+      rows.push({
+        'Date':b.date,
+        'Time':b.time,
+        'Invoice':b.invoice,
+        'Item ID':l.itemId,
+        'Item Name':l.itemName,
+        'Gross kg':Number(num(gross,2)),
+        'Empty Reel Deduction kg':Number(num(deduction,2)),
+        'Net kg':Number(num(net,2)),
+        'Meter':Number(num(l.meter,2)),
+        'Yard':Number(num(l.yard,2)),
+        'Price/Meter':l.price,
+        'Amount':Number(num(l.amount,2))
+      });
+    });
+  });
+  return rows;
+}
 function exportRows(rows,filename){
   if(!rows.length){toast('Data නැහැ');return;}
   if(typeof XLSX==='undefined'){toast('XLSX load නැහැ');return;}
@@ -1546,6 +1594,7 @@ function exportRows(rows,filename){
   if(totalDeduction>0){
     data.push(['','','','','REEL DEDUCTION TOTAL','',Number(totalDeduction.toFixed(2)),'','','','','']);
   }
+  data.push(['','','','','','','','','','','','']);
   data.push(['','','','','TOTAL',Number(totalGross.toFixed(2)),Number(totalDeduction.toFixed(2)),Number(totalNet.toFixed(2)),Number(totalMeter.toFixed(2)),Number(totalYard.toFixed(2)),'',Number(totalAmount.toFixed(2))]);
 
   const ws=XLSX.utils.aoa_to_sheet(data);
@@ -1680,11 +1729,38 @@ function saveReelDeduction(){
   loadReelById();
   if(!selectedReelItem){toast('Item select කරන්න');return;}
   const manualVal=Number(($('reelManualWeight')&&$('reelManualWeight').value)||0);
-  selectedReelItem.emptyReelKg=manualVal>0?manualVal:Number(currentWeight||0);
+  const source=manualVal>0?'manual':'scale';
+  const reelKg=manualVal>0?manualVal:Number(currentWeight||0);
+  if(reelKg<=0){toast('Reel kg enter කරන්න');return;}
+  selectedReelItem.emptyReelKg=reelKg;
+  if(!db.reelHistory)db.reelHistory=[];
+  const now=new Date();
+  db.reelHistory.push({
+    date:todayStr(),
+    time:now.toLocaleTimeString(),
+    itemId:selectedReelItem.id,
+    itemName:selectedReelItem.name,
+    reelKg:Number(reelKg.toFixed(2)),
+    source
+  });
   saveLocal();
   if($('reelManualWeight'))$('reelManualWeight').value='';
   toast('Reel weight saved ✓');
 }
+function refreshReelHistory(){
+  const body=$('reelHistoryBody');
+  if(!body)return;
+  const rows=(db.reelHistory||[]).slice().reverse().slice(0,50);
+  body.innerHTML=rows.map(r=>`<tr>
+    <td style="font-family:var(--mono);">${esc(r.date||'')}</td>
+    <td style="font-family:var(--mono);">${esc(r.time||'')}</td>
+    <td style="font-family:var(--mono);">${esc(r.itemId||'')}</td>
+    <td>${esc(r.itemName||'')}</td>
+    <td style="font-family:var(--mono);font-weight:900;color:var(--teal2);">${num(r.reelKg,2)}</td>
+    <td><span class="reel-source-pill ${r.source==='manual'?'manual':''}">${r.source==='manual'?'Manual':'Scale'}</span></td>
+  </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:18px;">No reel history</td></tr>';
+}
+
 function loadSettingsForm(){
   if($('printerType'))$('printerType').value=db.settings.printerType||'browser';
   if($('scaleHint'))$('scaleHint').value=db.settings.scaleHint||'';
