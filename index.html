@@ -1138,6 +1138,7 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
       <div class="right-note"><span class="pill" id="backupStatusPill">Local JSON Backup</span></div>
       <div class="backup-time-box">Last Auto Backup: <span id="lastBackupTime">—</span></div>
       <div class="endday-status-box">Business Day Auto Email: <span id="endDayEmailStatus">Waiting</span></div>
+      <div class="endday-status-box">Monthly Auto Email: <span id="monthEmailStatus">Waiting</span></div>
     </div>
   </div>
   <div id="adminSettings" class="admin-subpage">
@@ -1276,6 +1277,57 @@ const DB_KEY='lk_fabric_pos_tlstyle_v1';
 const DEFAULT_SCRIPT_URL='https://script.google.com/macros/s/AKfycbzWVSAWeYJ4KwQBpAnviNqE1eEXJBoAwirprp6qxTJznYnRwW2QF6iI3f_EVh6EEZLzJw/exec';
 
 const BUSINESS_DAY_END_HOUR=6; // 06:00 AM - previous day ends and auto summary can be sent
+
+function isLastDayOfMonth(d=new Date()){
+  const t=new Date(d.getFullYear(),d.getMonth()+1,0);
+  return d.getDate()===t.getDate();
+}
+function currentMonthStr(d=new Date()){return d.toISOString().slice(0,7);}
+function previousMonthStr(){
+  const d=new Date();
+  d.setMonth(d.getMonth()-1);
+  return d.toISOString().slice(0,7);
+}
+function monthToSend(){
+  const now=new Date();
+  // Send current month summary after 6:00 AM on the first day of next month.
+  if(now.getDate()===1 && now.getHours()>=BUSINESS_DAY_END_HOUR){
+    const p=new Date(now.getFullYear(),now.getMonth()-1,1);
+    return p.toISOString().slice(0,7);
+  }
+  return null;
+}
+function monthRows(month){return reportRows(b=>String(b.date).startsWith(month),true);}
+function getPendingMonthQueue(){
+  try{return JSON.parse(localStorage.getItem(DB_KEY+'_PENDING_MONTH_EMAILS')||'[]')||[];}catch(e){return [];}
+}
+function setPendingMonthQueue(q){localStorage.setItem(DB_KEY+'_PENDING_MONTH_EMAILS',JSON.stringify(q||[]));}
+function queueMonthEmail(month){
+  if(!month)return;
+  const q=getPendingMonthQueue();
+  if(!q.includes(month))q.push(month);
+  setPendingMonthQueue(q);
+}
+function markMonthSent(month){
+  if(!db.settings)db.settings={};
+  db.settings.lastMonthEmailSent=month;
+  const q=getPendingMonthQueue().filter(m=>m!==month);
+  setPendingMonthQueue(q);
+  // Month summary sent after month end. Clear reel history now.
+  db.reelHistory=[];
+  localStorage.setItem(DB_KEY,JSON.stringify(db));
+  refreshReelHistory();
+  updateMonthEmailStatus();
+  autoBackup();
+}
+function updateMonthEmailStatus(){
+  const el=$('monthEmailStatus');
+  if(!el)return;
+  const q=getPendingMonthQueue();
+  const sent=(db.settings&&db.settings.lastMonthEmailSent)||'—';
+  el.textContent=q.length?('Pending: '+q.join(', ')):('Last sent: '+sent);
+}
+
 function dateStrFromDate(d){return d.toISOString().slice(0,10);}
 function previousBusinessDayToSend(){
   const now=new Date();
@@ -1284,7 +1336,7 @@ function previousBusinessDayToSend(){
   y.setDate(y.getDate()-1);
   return dateStrFromDate(y);
 }
-function sameDayRows(day){return reportRows(b=>b.date===day);}
+function sameDayRows(day){return reportRows(b=>b.date===day,false);}
 function hasReelConfiguredOrUsed(rows){
   const configured=(db.items||[]).some(i=>Number(i.emptyReelKg||0)>0);
   const used=(rows||[]).some(r=>Number(r['Empty Reel Deduction kg']||0)>0);
@@ -1389,7 +1441,7 @@ function markAutoBackupDone(){
 }
 function esc(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 function parseWeight(text){const m=String(text||'').match(/[+-]?\d+(?:\.\d+)?/g);if(!m)return null;const ki=String(text).toLowerCase().lastIndexOf('kg');let pick=m[m.length-1];if(ki>-1){const b=String(text).slice(0,ki);const l=b.match(/[+-]?\d+(?:\.\d+)?/g);if(l)pick=l[l.length-1];}const v=Math.abs(Number(pick));return Number.isFinite(v)?v:null;}
-function loadLocal(){try{const raw=localStorage.getItem(DB_KEY);if(raw)db=JSON.parse(raw);}catch(e){}if(!db.items||!db.items.length){db.items=[{id:'IT001',name:'Premium Cotton Fabric',price:150,meterPerKg:5.5,emptyReelKg:.3,image:''},{id:'IT002',name:'School Uniform Fabric',price:120,meterPerKg:6.2,emptyReelKg:.25,image:''}];}if(!db.bills)db.bills=[];if(!db.reelHistory)db.reelHistory=[];ensureDailyStats();if(!db.settings)db.settings={printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:'',lastBackupAt:'',scriptUrl:DEFAULT_SCRIPT_URL,lastEndDayEmailSent:''};db.settings.scaleDeviceName=db.settings.scaleDeviceName||'';db.settings.printerDeviceName=db.settings.printerDeviceName||'';db.settings.lastBackupAt=db.settings.lastBackupAt||'';db.settings.scriptUrl=db.settings.scriptUrl||DEFAULT_SCRIPT_URL;db.settings.lastEndDayEmailSent=db.settings.lastEndDayEmailSent||'';if($('dailyDate'))$('dailyDate').value=todayStr();if($('monthPick'))$('monthPick').value=monthStr();loadShopForm();loadSettingsForm();refreshAll();updateClock();setInterval(updateClock,30000);setTimeout(tryReconnectSavedDevices,800);}
+function loadLocal(){try{const raw=localStorage.getItem(DB_KEY);if(raw)db=JSON.parse(raw);}catch(e){}if(!db.items||!db.items.length){db.items=[{id:'IT001',name:'Premium Cotton Fabric',price:150,meterPerKg:5.5,emptyReelKg:.3,image:''},{id:'IT002',name:'School Uniform Fabric',price:120,meterPerKg:6.2,emptyReelKg:.25,image:''}];}if(!db.bills)db.bills=[];if(!db.reelHistory)db.reelHistory=[];ensureDailyStats();if(!db.settings)db.settings={printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:'',lastBackupAt:'',scriptUrl:DEFAULT_SCRIPT_URL,lastEndDayEmailSent:'',lastMonthEmailSent:''};db.settings.scaleDeviceName=db.settings.scaleDeviceName||'';db.settings.printerDeviceName=db.settings.printerDeviceName||'';db.settings.lastBackupAt=db.settings.lastBackupAt||'';db.settings.scriptUrl=db.settings.scriptUrl||DEFAULT_SCRIPT_URL;db.settings.lastEndDayEmailSent=db.settings.lastEndDayEmailSent||'';db.settings.lastMonthEmailSent=db.settings.lastMonthEmailSent||'';if($('dailyDate'))$('dailyDate').value=todayStr();if($('monthPick'))$('monthPick').value=monthStr();loadShopForm();loadSettingsForm();refreshAll();updateClock();setInterval(updateClock,30000);setTimeout(tryReconnectSavedDevices,800);}
 function saveLocal(skip=false){
   localStorage.setItem(DB_KEY,JSON.stringify(db));
   refreshAll();
@@ -1400,7 +1452,7 @@ function updateClock(){
   if($('clockText'))$('clockText').textContent=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
   if($('clockDate'))$('clockDate').textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'2-digit',year:'numeric'});
 }
-function refreshAll(){if($('heroTitle'))$('heroTitle').textContent=db.shop.name||'LK FABRIC POS';updateHeaderLogo();refreshSelects();refreshItemList();refreshReelHistory();refreshReports();refreshAbout();updateLiveCalc();refreshDailyStatCards();updateBackupUI();updateEndDayStatus();}
+function refreshAll(){if($('heroTitle'))$('heroTitle').textContent=db.shop.name||'LK FABRIC POS';updateHeaderLogo();refreshSelects();refreshItemList();refreshReelHistory();refreshReports();refreshAbout();updateLiveCalc();refreshDailyStatCards();updateBackupUI();updateEndDayStatus();updateMonthEmailStatus();}
 function updateHeaderLogo(){const img=$('brandLogoImg'),emo=$('brandLogoEmoji');if(!img||!emo)return;if(db.shop.logo){img.src=db.shop.logo;img.style.display='block';emo.style.display='none';}else{img.removeAttribute('src');img.style.display='none';emo.style.display='inline';}}
 function refreshAbout(){if($('aboutShopName'))$('aboutShopName').textContent=db.shop.name||'LK Fabric Meter POS';if($('aboutShopDisplay'))$('aboutShopDisplay').textContent=db.shop.name||'—';if($('aboutPhoneDisplay'))$('aboutPhoneDisplay').textContent=db.shop.phone||'—';if($('aboutEmailDisplay'))$('aboutEmailDisplay').textContent=db.shop.email||'—';}
 function updateBottomNotch(){
@@ -1740,42 +1792,47 @@ function buildPrintSlip(bill){
   `;
 }
 function refreshReports(){const html=(db.bills||[]).slice().reverse().map(b=>`<tr><td style="font-size:12px;font-family:var(--mono);">${esc(b.date)}</td><td style="font-family:var(--mono);font-size:11px;">${esc(b.invoice)}</td><td style="color:var(--teal2);font-family:var(--mono);font-weight:800;">Rs ${money(b.total&&b.total.total)}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">No reports yet</td></tr>';if($('reportBodyMobile'))$('reportBodyMobile').innerHTML=html;}
-function reportRows(filterFn){
+function reportRows(filterFn,includeReel=true){
   const rows=[];
   (db.bills||[]).filter(filterFn).forEach(b=>{
     b.lines.forEach(l=>{
       const item=findItem(l.itemId)||{};
       const savedDeduction=Number(l.emptyReelDeductionKg ?? l.deduction ?? 0);
       const itemDeduction=Number(item.emptyReelKg||0);
-      const deduction=(savedDeduction>0 || itemDeduction>0)?savedDeduction:0;
+      const deduction=includeReel && (savedDeduction>0 || itemDeduction>0) ? savedDeduction : 0;
       const gross=Number(l.grossKg||0);
-      const net=Number(l.netKg ?? Math.max(0,gross-deduction));
-      rows.push({
+      const net=includeReel ? Number(l.netKg ?? Math.max(0,gross-deduction)) : gross;
+      const row={
         'Date':b.date,
         'Time':b.time,
         'Invoice':b.invoice,
         'Item ID':l.itemId,
         'Item Name':l.itemName,
         'Gross kg':Number(num(gross,2)),
-        'Empty Reel Deduction kg':Number(num(deduction,2)),
         'Net kg':Number(num(net,2)),
         'Meter':Number(num(l.meter,2)),
         'Yard':Number(num(l.yard,2)),
         'Price/Meter':l.price,
         'Amount':Number(num(l.amount,2))
-      });
+      };
+      if(includeReel)row['Empty Reel Deduction kg']=Number(num(deduction,2));
+      rows.push(row);
     });
   });
   return rows;
 }
-function exportRows(rows,filename){
+function exportRows(rows,filename,includeReel=null){
   if(!rows.length){toast('Data නැහැ');return;}
   if(typeof XLSX==='undefined'){toast('XLSX load නැහැ');return;}
 
-  const headers=[
+  const hasReel = includeReel===null ? rows.some(r=>Object.prototype.hasOwnProperty.call(r,'Empty Reel Deduction kg')) : includeReel;
+  const headers=hasReel ? [
     'Date','Time','Invoice','Item ID','Item Name',
     'Gross kg','Empty Reel Deduction kg','Net kg',
     'Meter','Yard','Price/Meter','Amount'
+  ] : [
+    'Date','Time','Invoice','Item ID','Item Name',
+    'Gross kg','Net kg','Meter','Yard','Price/Meter','Amount'
   ];
 
   const totalGross=rows.reduce((a,r)=>a+Number(r['Gross kg']||0),0);
@@ -1785,16 +1842,21 @@ function exportRows(rows,filename){
   const totalYard=rows.reduce((a,r)=>a+Number(r['Yard']||0),0);
   const totalAmount=rows.reduce((a,r)=>a+Number(r['Amount']||0),0);
 
-  const data=[
-    headers,
-    ...rows.map(r=>headers.map(h=>r[h]??''))
-  ];
-  const showReelSummary=hasReelConfiguredOrUsed(rows);
-  if(showReelSummary && totalDeduction>0){
-    data.push(['','','','','REEL DEDUCTION TOTAL','',Number(totalDeduction.toFixed(2)),'','','','','']);
+  const data=[headers,...rows.map(r=>headers.map(h=>r[h]??''))];
+  if(hasReel && hasReelConfiguredOrUsed(rows) && totalDeduction>0){
+    data.push(headers.map(h=>h==='Item Name'?'REEL DEDUCTION TOTAL':(h==='Empty Reel Deduction kg'?Number(totalDeduction.toFixed(2)) : '')));
   }
-  data.push(['','','','','','','','','','','','']);
-  data.push(['','','','','TOTAL',Number(totalGross.toFixed(2)),Number(totalDeduction.toFixed(2)),Number(totalNet.toFixed(2)),Number(totalMeter.toFixed(2)),Number(totalYard.toFixed(2)),'',Number(totalAmount.toFixed(2))]);
+  data.push(headers.map(()=>'')); // blank row before total
+  data.push(headers.map(h=>{
+    if(h==='Item Name')return 'TOTAL';
+    if(h==='Gross kg')return Number(totalGross.toFixed(2));
+    if(h==='Empty Reel Deduction kg')return Number(totalDeduction.toFixed(2));
+    if(h==='Net kg')return Number(totalNet.toFixed(2));
+    if(h==='Meter')return Number(totalMeter.toFixed(2));
+    if(h==='Yard')return Number(totalYard.toFixed(2));
+    if(h==='Amount')return Number(totalAmount.toFixed(2));
+    return '';
+  }));
 
   const ws=XLSX.utils.aoa_to_sheet(data);
 
@@ -1809,22 +1871,19 @@ function exportRows(rows,filename){
 
   const range=XLSX.utils.decode_range(ws['!ref']);
   for(let R=range.s.r;R<=range.e.r;R++){
-    const labelCell=ws[XLSX.utils.encode_cell({r:R,c:4})];
+    const labelCell=ws[XLSX.utils.encode_cell({r:R,c:headers.indexOf('Item Name')})];
     const isTotal=labelCell && (labelCell.v==='TOTAL' || labelCell.v==='REEL DEDUCTION TOTAL');
     for(let C=range.s.c;C<=range.e.c;C++){
       const addr=XLSX.utils.encode_cell({r:R,c:C});
       if(!ws[addr])continue;
-
       const colIndex=C-range.s.c;
       const strong=headerColors[colIndex%headerColors.length];
       const pale=lightColors[colIndex%lightColors.length];
       const colBorder={style:'thin',color:{rgb:strong}};
-
       ws[addr].s={
         border:{top:colBorder,bottom:colBorder,left:colBorder,right:colBorder},
         alignment:{vertical:'center',horizontal:R===0?'center':'left',wrapText:true}
       };
-
       if(R===0){
         ws[addr].s.fill={fgColor:{rgb:strong}};
         ws[addr].s.font={bold:true,color:{rgb:'FFFFFF'}};
@@ -1841,18 +1900,15 @@ function exportRows(rows,filename){
     }
   }
 
-  ws['!cols']=[
-    {wch:12},{wch:12},{wch:20},{wch:12},{wch:24},
-    {wch:12},{wch:25},{wch:12},{wch:12},{wch:12},{wch:14},{wch:14}
-  ];
+  ws['!cols']=headers.map(h=>({wch:h==='Item Name'?24:(h==='Empty Reel Deduction kg'?25:14)}));
   ws['!rows']=[{hpt:28}];
 
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Report');
   XLSX.writeFile(wb,filename);
 }
-function exportDailyReport(){const d=$('dailyDate').value||todayStr();exportRows(reportRows(b=>b.date===d),`LK_Fabric_Daily_${d}.xlsx`);}
-function exportMonthlyReport(){const m=$('monthPick').value||monthStr();exportRows(reportRows(b=>String(b.date).startsWith(m)),`LK_Fabric_Monthly_${m}.xlsx`);}
+function exportDailyReport(){const d=$('dailyDate').value||todayStr();exportRows(reportRows(b=>b.date===d,false),`LK_Fabric_Daily_${d}.xlsx`,false);}
+function exportMonthlyReport(){const m=$('monthPick').value||monthStr();exportRows(reportRows(b=>String(b.date).startsWith(m),true),`LK_Fabric_Monthly_${m}.xlsx`,true);}
 function requestClearReportHistory(){
   requestSecurePin('Clear Sales History','Sales reports history මකන්න PIN අවශ්‍යයි','🗑️',clearSalesHistory);
 }
@@ -1866,17 +1922,22 @@ function clearSalesHistory(){
 function getReportRowsForType(type){
   if(type==='monthly'){
     const m=$('monthPick').value||monthStr();
-    return {rows:reportRows(b=>String(b.date).startsWith(m)), filename:`LK_Fabric_Monthly_${m}.xlsx`, label:'Monthly'};
+    return {rows:reportRows(b=>String(b.date).startsWith(m),true), filename:`LK_Fabric_Monthly_${m}.xlsx`, label:'Monthly', includeReel:true};
   }
   const d=$('dailyDate').value||todayStr();
-  return {rows:reportRows(b=>b.date===d), filename:`LK_Fabric_Daily_${d}.xlsx`, label:'Daily'};
+  return {rows:reportRows(b=>b.date===d,false), filename:`LK_Fabric_Daily_${d}.xlsx`, label:'Daily', includeReel:false};
 }
-function buildReportWorkbookBlob(rows){
-  const headers=[
+function buildReportWorkbookBlob(rows,includeReel=null){
+  const hasReel = includeReel===null ? rows.some(r=>Object.prototype.hasOwnProperty.call(r,'Empty Reel Deduction kg')) : includeReel;
+  const headers=hasReel ? [
     'Date','Time','Invoice','Item ID','Item Name',
     'Gross kg','Empty Reel Deduction kg','Net kg',
     'Meter','Yard','Price/Meter','Amount'
+  ] : [
+    'Date','Time','Invoice','Item ID','Item Name',
+    'Gross kg','Net kg','Meter','Yard','Price/Meter','Amount'
   ];
+
   const totalGross=rows.reduce((a,r)=>a+Number(r['Gross kg']||0),0);
   const totalDeduction=rows.reduce((a,r)=>a+Number(r['Empty Reel Deduction kg']||0),0);
   const totalNet=rows.reduce((a,r)=>a+Number(r['Net kg']||0),0);
@@ -1884,25 +1945,29 @@ function buildReportWorkbookBlob(rows){
   const totalYard=rows.reduce((a,r)=>a+Number(r['Yard']||0),0);
   const totalAmount=rows.reduce((a,r)=>a+Number(r['Amount']||0),0);
   const data=[headers,...rows.map(r=>headers.map(h=>r[h]??''))];
-  const showReelSummary=hasReelConfiguredOrUsed(rows);
-  if(showReelSummary && totalDeduction>0)data.push(['','','','','REEL DEDUCTION TOTAL','',Number(totalDeduction.toFixed(2)),'','','','','']);
-  data.push(['','','','','','','','','','','','']);
-  data.push(['','','','','TOTAL',Number(totalGross.toFixed(2)),Number(totalDeduction.toFixed(2)),Number(totalNet.toFixed(2)),Number(totalMeter.toFixed(2)),Number(totalYard.toFixed(2)),'',Number(totalAmount.toFixed(2))]);
+
+  if(hasReel && hasReelConfiguredOrUsed(rows) && totalDeduction>0){
+    data.push(headers.map(h=>h==='Item Name'?'REEL DEDUCTION TOTAL':(h==='Empty Reel Deduction kg'?Number(totalDeduction.toFixed(2)) : '')));
+  }
+  data.push(headers.map(()=>''));
+  data.push(headers.map(h=>{
+    if(h==='Item Name')return 'TOTAL';
+    if(h==='Gross kg')return Number(totalGross.toFixed(2));
+    if(h==='Empty Reel Deduction kg')return Number(totalDeduction.toFixed(2));
+    if(h==='Net kg')return Number(totalNet.toFixed(2));
+    if(h==='Meter')return Number(totalMeter.toFixed(2));
+    if(h==='Yard')return Number(totalYard.toFixed(2));
+    if(h==='Amount')return Number(totalAmount.toFixed(2));
+    return '';
+  }));
 
   const ws=XLSX.utils.aoa_to_sheet(data);
-
-  const headerColors=[
-    '15803D','0F766E','1D4ED8','7C3AED','C2410C','BE123C',
-    'A16207','047857','0369A1','4338CA','B45309','DC2626'
-  ];
-  const lightColors=[
-    'DCFCE7','CCFBF1','DBEAFE','EDE9FE','FFEDD5','FFE4E6',
-    'FEF3C7','D1FAE5','E0F2FE','E0E7FF','FDE68A','FEE2E2'
-  ];
+  const headerColors=['15803D','0F766E','1D4ED8','7C3AED','C2410C','BE123C','A16207','047857','0369A1','4338CA','B45309','DC2626'];
+  const lightColors=['DCFCE7','CCFBF1','DBEAFE','EDE9FE','FFEDD5','FFE4E6','FEF3C7','D1FAE5','E0F2FE','E0E7FF','FDE68A','FEE2E2'];
 
   const range=XLSX.utils.decode_range(ws['!ref']);
   for(let R=range.s.r;R<=range.e.r;R++){
-    const labelCell=ws[XLSX.utils.encode_cell({r:R,c:4})];
+    const labelCell=ws[XLSX.utils.encode_cell({r:R,c:headers.indexOf('Item Name')})];
     const isTotal=labelCell && (labelCell.v==='TOTAL' || labelCell.v==='REEL DEDUCTION TOTAL');
     for(let C=range.s.c;C<=range.e.c;C++){
       const addr=XLSX.utils.encode_cell({r:R,c:C});
@@ -1930,11 +1995,7 @@ function buildReportWorkbookBlob(rows){
       }
     }
   }
-
-  ws['!cols']=[
-    {wch:12},{wch:12},{wch:20},{wch:12},{wch:24},
-    {wch:12},{wch:25},{wch:12},{wch:12},{wch:12},{wch:14},{wch:14}
-  ];
+  ws['!cols']=headers.map(h=>({wch:h==='Item Name'?24:(h==='Empty Reel Deduction kg'?25:14)}));
   ws['!rows']=[{hpt:28}];
 
   const wb=XLSX.utils.book_new();
@@ -1946,7 +2007,7 @@ async function shareOrDownloadReport(type){
   const info=getReportRowsForType(type);
   if(!info.rows.length){toast('Data නැහැ');return null;}
   if(typeof XLSX==='undefined'){toast('XLSX load නැහැ');return null;}
-  const blob=buildReportWorkbookBlob(info.rows);
+  const blob=buildReportWorkbookBlob(info.rows,info.includeReel);
   const file=new File([blob],info.filename,{type:blob.type});
   if(navigator.canShare && navigator.canShare({files:[file]})){
     try{
@@ -2004,7 +2065,7 @@ function postToAppsScriptNoCors(url,payload){
     },2500);
   });
 }
-async function sendReportViaAppsScript(type, dayOverride=null, silent=false){
+async function sendReportViaAppsScript(type, periodOverride=null, silent=false){
   const email=(db.shop.email||'').trim();
   const url=(db.settings&&db.settings.scriptUrl||'').trim();
   if(!email){if(!silent)toast('Admin → Shop → Report Email save කරන්න');return false;}
@@ -2012,18 +2073,20 @@ async function sendReportViaAppsScript(type, dayOverride=null, silent=false){
   if(!navigator.onLine){if(!silent)toast('Internet නැහැ. Later auto send වෙයි.');return false;}
 
   let info;
-  if(dayOverride){
-    info={rows:sameDayRows(dayOverride), filename:`LK_Fabric_Daily_${dayOverride}.xlsx`, label:'Daily'};
+  if(periodOverride && type==='monthly'){
+    info={rows:monthRows(periodOverride), filename:`LK_Fabric_Monthly_${periodOverride}.xlsx`, label:'Monthly', includeReel:true};
+  }else if(periodOverride){
+    info={rows:sameDayRows(periodOverride), filename:`LK_Fabric_Daily_${periodOverride}.xlsx`, label:'Daily', includeReel:false};
   }else{
     info=getReportRowsForType(type);
   }
   if(!info.rows.length){if(!silent)toast('Data නැහැ');return true;}
   if(typeof XLSX==='undefined'){if(!silent)toast('XLSX load නැහැ');return false;}
 
-  const blob=buildReportWorkbookBlob(info.rows);
+  const blob=buildReportWorkbookBlob(info.rows,info.includeReel);
   const base64=await blobToBase64(blob);
-  const subject=(type==='monthly'?'Monthly':'Daily')+' Fabric Sales Report - '+(db.shop.name||'')+(dayOverride?' - '+dayOverride:'');
-  const body='Attached Excel report.\\n\\nShop: '+(db.shop.name||'')+'\\nBusiness Day: '+(dayOverride||($('dailyDate')&&$('dailyDate').value)||todayStr())+'\\nSent: '+new Date().toLocaleString();
+  const subject=(type==='monthly'?'Monthly':'Daily')+' Fabric Sales Report - '+(db.shop.name||'')+(periodOverride?' - '+periodOverride:'');
+  const body='Attached Excel report.\\n\\nShop: '+(db.shop.name||'')+'\\nPeriod: '+(periodOverride||(($('dailyDate')&&$('dailyDate').value)||todayStr()))+'\\nSent: '+new Date().toLocaleString();
 
   if(!silent)toast('Email sending...');
   await postToAppsScriptNoCors(url,{
@@ -2076,6 +2139,30 @@ async function checkBusinessDayAutoEmail(){
   queueEndDayEmail(day);
   updateEndDayStatus();
   await processPendingEndDayEmails();
+}
+
+async function processPendingMonthEmails(){
+  const q=getPendingMonthQueue();
+  if(!q.length)return;
+  if(!navigator.onLine){updateMonthEmailStatus();return;}
+  for(const month of [...q]){
+    const rows=monthRows(month);
+    if(!rows.length){
+      markMonthSent(month);
+      continue;
+    }
+    const ok=await sendReportViaAppsScript('monthly',month,true);
+    if(ok)markMonthSent(month);
+    else break;
+  }
+}
+async function checkMonthEndAutoEmail(){
+  const month=monthToSend();
+  if(!month)return;
+  if(db.settings&&db.settings.lastMonthEmailSent===month)return;
+  queueMonthEmail(month);
+  updateMonthEmailStatus();
+  await processPendingMonthEmails();
 }
 
 async function prepareEmailReport(type){
@@ -2231,8 +2318,8 @@ async function manualBackup(){
 function downloadJsonBackup(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='LK_Fabric_POS_Backup.json';a.click();URL.revokeObjectURL(a.href);}
 function restoreFromFile(){$('restoreFile').click();}
 function handleRestoreFile(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.items||!d.bills)throw new Error('Invalid');db=d;saveLocal(true);loadShopForm();loadSettingsForm();refreshAll();toast('Restore done ✓');}catch(err){toast('Restore failed');}};r.readAsText(f);}
-window.addEventListener('resize',updateBottomNotch);window.addEventListener('DOMContentLoaded',()=>{loadLocal();moveBackupStateUnderClock();updateChosenFile('shopLogo','shopLogoName',true);updateChosenFile('itemImage','itemImageName',true);lockManualWeight();updateBackupUI();updateEndDayStatus();checkBusinessDayAutoEmail();setInterval(checkBusinessDayAutoEmail,5*60*1000);setTimeout(updateBottomNotch,120);});
-window.addEventListener('online',()=>{processPendingEndDayEmails();});
+window.addEventListener('resize',updateBottomNotch);window.addEventListener('DOMContentLoaded',()=>{loadLocal();moveBackupStateUnderClock();updateChosenFile('shopLogo','shopLogoName',true);updateChosenFile('itemImage','itemImageName',true);lockManualWeight();updateBackupUI();updateEndDayStatus();updateMonthEmailStatus();checkBusinessDayAutoEmail();checkMonthEndAutoEmail();setInterval(()=>{checkBusinessDayAutoEmail();checkMonthEndAutoEmail();},5*60*1000);setTimeout(updateBottomNotch,120);});
+window.addEventListener('online',()=>{processPendingEndDayEmails();processPendingMonthEmails();});
 </script>
 </body>
 </html>
