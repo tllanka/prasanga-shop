@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lk-fabric-pos-v24';
+const CACHE_NAME = 'lk-fabric-pos-v25';
 const ASSETS = [
   './',
   './index.html',
