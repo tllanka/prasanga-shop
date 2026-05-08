@@ -1423,6 +1423,15 @@ let autoReconnectScaleTimer=null;
 let scaleReconnectBusy=false;
 let lastScaleDevice=null;
 function isZeroWeight(v){return Math.abs(Number(v||0))<=ZERO_WEIGHT_THRESHOLD;}
+
+function saveWeightLock(){
+  localStorage.setItem(DB_KEY+'_WAIT_ZERO', waitForZeroAfterFinish ? '1' : '0');
+}
+function loadWeightLock(){
+  waitForZeroAfterFinish = localStorage.getItem(DB_KEY+'_WAIT_ZERO') === '1';
+  updateWeightLockUI();
+}
+
 function updateWeightLockUI(){
   const note=$('weightLockNote');
   if(note)note.classList.toggle('show',!!waitForZeroAfterFinish);
@@ -1614,6 +1623,7 @@ function setWeight(v){
   currentWeight=Number(v||0);
   if(waitForZeroAfterFinish && isZeroWeight(currentWeight)){
     waitForZeroAfterFinish=false;
+    saveWeightLock();
     updateWeightLockUI();
     toast('Ready for next bill ✓');
   }
@@ -1707,8 +1717,7 @@ async function tryReconnectKnownScaleDevices(){
 function startScaleAutoReconnect(){
   if(autoReconnectScaleTimer)return;
   autoReconnectScaleTimer=setInterval(()=>{
-    if(lastScaleDevice||scaleDevice)autoReconnectScale();
-    else tryReconnectKnownScaleDevices();
+    tryReconnectKnownScaleDevices().then(ok=>{if(!ok&&(lastScaleDevice||scaleDevice))autoReconnectScale();});
   },5000);
 }
 function bluetoothReady(){
@@ -1928,6 +1937,7 @@ function finishBill(){
   else setTimeout(()=>window.print(),150);
   currentBill=[];
   waitForZeroAfterFinish=true;
+  saveWeightLock();
   updateWeightLockUI();
   clearMainPage();
   toast('Bill saved, printed & backed up ✓');
@@ -2422,16 +2432,15 @@ function lockManualWeight(){
 }
 function clearMainPage(){
   selectedSaleItem=null;
-  currentWeight=0;
+  if(!waitForZeroAfterFinish)currentWeight=0;
   if($('mainItemId'))$('mainItemId').value='';
   if($('mainItemSelect'))$('mainItemSelect').value='';
-  if($('mainManualWeight'))$('mainManualWeight').value='';
+  if($('mainManualWeight'))$('mainManualWeight').value=waitForZeroAfterFinish?disp2(currentWeight):'';
   lockManualWeight();
   updateLiveCalc();
-  if($('weightDisplay'))$('weightDisplay').textContent='0.00';
+  updateWeightLockUI();
+  if($('weightDisplay'))$('weightDisplay').textContent=waitForZeroAfterFinish?disp2(currentWeight):'0.00';
 }
-
-function loadPriceItem(){const id=$('priceItemId').value.trim();const item=findItem(id);if(item){$('priceItemSelect').value=id;$('currentPrice').value=money(item.price);$('newPrice').value=item.price;}else{$('currentPrice').value='';}}
 function loadPriceItemSelect(){const id=$('priceItemSelect').value;$('priceItemId').value=id;loadPriceItem();}
 function updatePrice(){const item=findItem($('priceItemId').value.trim());if(!item){toast('Item හමු නැහැ');return;}item.price=Number($('newPrice').value||0);saveLocal();toast('Price updated ✓');}
 function loadReelById(){const id=$('reelItemId').value.trim();selectedReelItem=findItem(id)||null;if(selectedReelItem&&$('reelItemSelect'))$('reelItemSelect').value=id;}
@@ -2509,7 +2518,7 @@ async function manualBackup(){
 function downloadJsonBackup(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='LK_Fabric_POS_Backup.json';a.click();URL.revokeObjectURL(a.href);}
 function restoreFromFile(){$('restoreFile').click();}
 function handleRestoreFile(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.items||!d.bills)throw new Error('Invalid');db=d;saveLocal(true);loadShopForm();loadSettingsForm();refreshAll();toast('Restore done ✓');}catch(err){toast('Restore failed');}};r.readAsText(f);}
-window.addEventListener('resize',updateBottomNotch);window.addEventListener('DOMContentLoaded',()=>{loadLocal();applyDefaultHeaderLogo();moveBackupStateUnderClock();tryReconnectKnownScaleDevices();startScaleAutoReconnect();updateWeightLockUI();updateChosenFile('shopLogo','shopLogoName',true);updateChosenFile('itemImage','itemImageName',true);lockManualWeight();updateBackupUI();updateEndDayStatus();updateMonthEmailStatus();checkBusinessDayAutoEmail();checkMonthEndAutoEmail();setInterval(()=>{checkBusinessDayAutoEmail();checkMonthEndAutoEmail();},5*60*1000);setTimeout(updateBottomNotch,120);});
+window.addEventListener('resize',updateBottomNotch);window.addEventListener('DOMContentLoaded',()=>{loadLocal();applyDefaultHeaderLogo();moveBackupStateUnderClock();tryReconnectKnownScaleDevices();startScaleAutoReconnect();loadWeightLock();updateChosenFile('shopLogo','shopLogoName',true);updateChosenFile('itemImage','itemImageName',true);lockManualWeight();updateBackupUI();updateEndDayStatus();updateMonthEmailStatus();checkBusinessDayAutoEmail();checkMonthEndAutoEmail();setInterval(()=>{checkBusinessDayAutoEmail();checkMonthEndAutoEmail();},5*60*1000);setTimeout(updateBottomNotch,120);});
 window.addEventListener('online',()=>{processPendingEndDayEmails();processPendingMonthEmails();});
 
 /* --- PWA install logic --- */
