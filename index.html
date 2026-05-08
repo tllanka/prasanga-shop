@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>LK Fabric Meter POS</title>
+<title>LK Fabric POS System</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Sinhala:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <style>
@@ -779,7 +779,30 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
   font-size:11.5px;font-weight:850;line-height:1.45;font-family:var(--sans);
 }
 
+
+/* --- V20 PWA install button --- */
+.pwa-install-btn{
+  position:fixed;right:16px;bottom:96px;z-index:999;
+  display:none;align-items:center;gap:8px;
+  border:none;border-radius:999px;padding:12px 16px;
+  font-family:var(--sinhala);font-size:13px;font-weight:900;
+  color:#fff;background:linear-gradient(160deg,#14b8a6,#0f766e,#064e3b);
+  box-shadow:0 12px 28px rgba(15,118,110,.32), inset 0 1px 2px rgba(255,255,255,.25);
+  cursor:pointer;
+}
+.pwa-install-btn.show{display:flex;}
+.pwa-install-btn:active{transform:scale(.97);}
+@media (display-mode:standalone){
+  .pwa-install-btn{display:none!important;}
+}
+
 </style>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f766e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LK Fabric POS">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
 <div class="app">
@@ -1268,6 +1291,7 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
 </div>
 
 <div id="printSlip" class="print-slip"></div>
+<button id="pwaInstallBtn" class="pwa-install-btn" onclick="installPWA()">⬇️ Install App</button>
 <div id="toast" class="toast"></div>
 <div class="desktop-sections"></div>
 
@@ -2320,6 +2344,48 @@ function restoreFromFile(){$('restoreFile').click();}
 function handleRestoreFile(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.items||!d.bills)throw new Error('Invalid');db=d;saveLocal(true);loadShopForm();loadSettingsForm();refreshAll();toast('Restore done ✓');}catch(err){toast('Restore failed');}};r.readAsText(f);}
 window.addEventListener('resize',updateBottomNotch);window.addEventListener('DOMContentLoaded',()=>{loadLocal();moveBackupStateUnderClock();updateChosenFile('shopLogo','shopLogoName',true);updateChosenFile('itemImage','itemImageName',true);lockManualWeight();updateBackupUI();updateEndDayStatus();updateMonthEmailStatus();checkBusinessDayAutoEmail();checkMonthEndAutoEmail();setInterval(()=>{checkBusinessDayAutoEmail();checkMonthEndAutoEmail();},5*60*1000);setTimeout(updateBottomNotch,120);});
 window.addEventListener('online',()=>{processPendingEndDayEmails();processPendingMonthEmails();});
+
+/* --- PWA install logic --- */
+let deferredPwaPrompt=null;
+function isPwaInstalled(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+}
+function updateInstallButton(){
+  const btn=document.getElementById('pwaInstallBtn');
+  if(!btn)return;
+  if(isPwaInstalled())btn.classList.remove('show');
+  else if(deferredPwaPrompt)btn.classList.add('show');
+}
+window.addEventListener('beforeinstallprompt',(e)=>{
+  e.preventDefault();
+  deferredPwaPrompt=e;
+  updateInstallButton();
+});
+async function installPWA(){
+  const btn=document.getElementById('pwaInstallBtn');
+  if(!deferredPwaPrompt){
+    toast('Browser menu → Add to Home screen භාවිතා කරන්න');
+    return;
+  }
+  deferredPwaPrompt.prompt();
+  const choice=await deferredPwaPrompt.userChoice;
+  deferredPwaPrompt=null;
+  if(btn)btn.classList.remove('show');
+  if(choice&&choice.outcome==='accepted')toast('App install වෙමින් පවතී ✓');
+}
+window.addEventListener('appinstalled',()=>{
+  deferredPwaPrompt=null;
+  updateInstallButton();
+  toast('App installed ✓');
+});
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+    updateInstallButton();
+  });
+}
+setTimeout(updateInstallButton,1200);
+
 </script>
 </body>
 </html>
