@@ -627,6 +627,43 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
 }
 .backup-time-box span{color:var(--ink2);font-family:var(--mono);}
 
+
+/* --- V10 backup state under time/date --- */
+.topbar-clock .head-backup-pill.under-clock{
+  margin:7px 0 0 0;
+  padding:4px 9px;
+  font-size:10px;
+  align-self:flex-end;
+  background:rgba(0,0,0,0.13);
+}
+.topbar-row2 > .head-backup-pill.under-clock{display:none;}
+
+
+/* --- V11: backup state fixed under time/date --- */
+.topbar-clock{
+  min-width:118px;
+}
+.topbar-clock .head-backup-pill.under-clock{
+  display:inline-flex!important;
+  margin-top:7px!important;
+  padding:4px 8px!important;
+  border-radius:999px!important;
+  font-size:9.5px!important;
+  line-height:1!important;
+  font-weight:900!important;
+  letter-spacing:.2px!important;
+  align-self:flex-end!important;
+  background:rgba(0,0,0,0.16)!important;
+  border:1px solid rgba(255,255,255,0.14)!important;
+  color:rgba(255,255,255,0.86)!important;
+  white-space:nowrap!important;
+}
+.topbar-clock .head-backup-pill.under-clock .b-dot{
+  width:6px!important;
+  height:6px!important;
+  flex:0 0 6px!important;
+}
+
 </style>
 </head>
 <body>
@@ -646,6 +683,9 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
     <div class="topbar-clock">
       <div class="clock-time" id="clockText">12:00</div>
       <div class="clock-date" id="clockDate">Wed May 07 2025</div>
+      <div class="head-backup-pill under-clock done" id="headBackupPill">
+        <span class="b-dot"></span><span id="headBackupText">Backup ready</span>
+      </div>
     </div>
   </div>
   <div class="topbar-row2">
@@ -1056,6 +1096,16 @@ const todayStr=()=>new Date().toISOString().slice(0,10);
 const monthStr=()=>new Date().toISOString().slice(0,7);
 const invoiceNo=()=>'INV-'+new Date().toISOString().replace(/[-:.TZ]/g,'').slice(0,14);
 function toast(msg){const t=$('toast');if(!t)return;t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+
+function moveBackupStateUnderClock(){
+  const clock=document.querySelector('.topbar-clock');
+  const pill=$('headBackupPill');
+  if(clock&&pill&&!clock.contains(pill)){
+    clock.appendChild(pill);
+    pill.classList.add('under-clock');
+  }
+}
+
 function formatBackupTime(v){
   if(!v)return '—';
   try{return new Date(v).toLocaleString('en-US',{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});}catch(e){return v;}
@@ -1065,7 +1115,7 @@ function setBackupHead(state,msg){
   if(!pill||!txt)return;
   pill.classList.remove('active','done');
   if(state)pill.classList.add(state);
-  txt.textContent=msg||'Backup ready';
+  txt.textContent=(msg||'Backup ready').replace('Backup ','BKP ');
 }
 function updateBackupUI(){
   const t=formatBackupTime(db.settings&&db.settings.lastBackupAt);
@@ -1369,24 +1419,50 @@ function exportRows(rows,filename){
   const data=[headers,...rows.map(r=>headers.map(h=>r[h]??''))];
   const ws=XLSX.utils.aoa_to_sheet(data);
 
-  const green='16A34A';
-  const lightGreen='E8F8EE';
-  const borderGreen={style:'thin',color:{rgb:green}};
+  const headerColors=[
+    '15803D', // Date
+    '0F766E', // Time
+    '1D4ED8', // Invoice
+    '7C3AED', // Item ID
+    'C2410C', // Item Name
+    'BE123C', // Gross kg
+    'A16207', // Empty Reel Deduction kg
+    '047857', // Net kg
+    '0369A1', // Meter
+    '4338CA', // Yard
+    'B45309', // Price/Meter
+    'DC2626'  // Amount
+  ];
+  const lightColors=[
+    'DCFCE7','CCFBF1','DBEAFE','EDE9FE','FFEDD5','FFE4E6',
+    'FEF3C7','D1FAE5','E0F2FE','E0E7FF','FDE68A','FEE2E2'
+  ];
 
   const range=XLSX.utils.decode_range(ws['!ref']);
   for(let R=range.s.r;R<=range.e.r;R++){
     for(let C=range.s.c;C<=range.e.c;C++){
       const addr=XLSX.utils.encode_cell({r:R,c:C});
       if(!ws[addr])continue;
+
+      const colIndex=C-range.s.c;
+      const strong=headerColors[colIndex%headerColors.length];
+      const pale=lightColors[colIndex%lightColors.length];
+      const colBorder={style:'thin',color:{rgb:strong}};
+
       ws[addr].s={
-        border:{top:borderGreen,bottom:borderGreen,left:borderGreen,right:borderGreen},
+        border:{top:colBorder,bottom:colBorder,left:colBorder,right:colBorder},
         alignment:{vertical:'center',horizontal:R===0?'center':'left',wrapText:true}
       };
+
       if(R===0){
-        ws[addr].s.fill={fgColor:{rgb:green}};
+        ws[addr].s.fill={fgColor:{rgb:strong}};
         ws[addr].s.font={bold:true,color:{rgb:'FFFFFF'}};
       }else{
-        ws[addr].s.fill={fgColor:{rgb: R%2===0 ? lightGreen : 'FFFFFF'}};
+        ws[addr].s.fill={fgColor:{rgb:pale}};
+        ws[addr].s.font={color:{rgb:'111827'}};
+        if(typeof ws[addr].v==='number'){
+          ws[addr].s.alignment={vertical:'center',horizontal:'right',wrapText:true};
+        }
       }
     }
   }
@@ -1395,7 +1471,7 @@ function exportRows(rows,filename){
     {wch:12},{wch:12},{wch:20},{wch:12},{wch:24},
     {wch:12},{wch:25},{wch:12},{wch:12},{wch:12},{wch:14},{wch:14}
   ];
-  ws['!rows']=[{hpt:26}];
+  ws['!rows']=[{hpt:28}];
 
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Report');
@@ -1510,7 +1586,7 @@ async function manualBackup(){
 function downloadJsonBackup(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='LK_Fabric_POS_Backup.json';a.click();URL.revokeObjectURL(a.href);}
 function restoreFromFile(){$('restoreFile').click();}
 function handleRestoreFile(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.items||!d.bills)throw new Error('Invalid');db=d;saveLocal(true);loadShopForm();loadSettingsForm();refreshAll();toast('Restore done ✓');}catch(err){toast('Restore failed');}};r.readAsText(f);}
-window.addEventListener('resize',updateBottomNotch);window.addEventListener('DOMContentLoaded',()=>{loadLocal();updateChosenFile('shopLogo','shopLogoName',true);updateChosenFile('itemImage','itemImageName',true);lockManualWeight();updateBackupUI();setTimeout(updateBottomNotch,120);});
+window.addEventListener('resize',updateBottomNotch);window.addEventListener('DOMContentLoaded',()=>{loadLocal();moveBackupStateUnderClock();updateChosenFile('shopLogo','shopLogoName',true);updateChosenFile('itemImage','itemImageName',true);lockManualWeight();updateBackupUI();setTimeout(updateBottomNotch,120);});
 </script>
 </body>
 </html>
