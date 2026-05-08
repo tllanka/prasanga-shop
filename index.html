@@ -737,6 +737,28 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
 }
 .reel-source-pill.manual{background:#fef3c7;color:#a16207;}
 
+
+/* --- V14: secure PIN keyboard for protected actions --- */
+.secure-pin-box{padding:0;overflow:hidden;background:#f6fbfa;border-radius:30px;}
+.secure-pin-head{
+  background:linear-gradient(155deg,#0c6c61,#0e8a7c,#11a194);
+  padding:26px 22px 20px;color:#fff;text-align:center;
+}
+.secure-pin-head .pin-icon{
+  width:72px;height:72px;margin:0 auto 12px;border-radius:24px;
+  background:rgba(255,255,255,0.14);display:grid;place-items:center;font-size:34px;
+  border:1px solid rgba(255,255,255,0.22);
+  box-shadow:inset 0 2px 4px rgba(255,255,255,0.18), inset 0 -8px 16px rgba(0,0,0,0.16);
+}
+.secure-pin-head h2{font-size:24px;margin:0;color:#fff!important;}
+.secure-pin-head p{margin-top:7px;color:rgba(255,255,255,.78);font-weight:800;font-size:13px;}
+.secure-pin-body{padding:20px 20px 22px;}
+.danger-note{
+  margin-top:10px;padding:10px 12px;border-radius:14px;
+  background:#fff7ed;border:1px solid #fed7aa;
+  color:#9a3412;font-size:12px;font-weight:800;font-family:var(--sans);
+}
+
 </style>
 </head>
 <body>
@@ -913,7 +935,9 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
       <button class="btn btn-green" onclick="exportDailyReport()">📥 Daily XLSX</button>
       <button class="btn btn-teal" onclick="exportMonthlyReport()">📥 Monthly</button>
       <button class="btn btn-amber" onclick="prepareEmailReport('daily')">📧 Email</button>
+      <button class="btn red" onclick="requestClearReportHistory()">🗑️ Clear History</button>
     </div>
+    <div class="danger-note">Sales history මකන්න PIN අවශ්‍යයි. Clear කළ පසු auto backup update වෙනවා.</div>
   </div>
   <div class="card" style="overflow:auto;padding:0;border-radius:18px;">
     <table>
@@ -1183,6 +1207,40 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
   </div>
 </div>
 
+
+<!-- GENERIC SECURE PIN MODAL -->
+<div class="modal" id="securePinModal">
+  <div class="modal-box secure-pin-box">
+    <div class="secure-pin-head">
+      <div class="pin-icon" id="securePinIcon">🔐</div>
+      <h2 id="securePinTitle">Password Required</h2>
+      <p id="securePinSub">Enter PIN to continue</p>
+    </div>
+    <div class="secure-pin-body">
+      <input id="securePinInput" type="password" inputmode="numeric" pattern="[0-9]*" class="hidden">
+      <div class="pin-dots" id="securePinDots">
+        <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+      </div>
+      <div class="pin-grid">
+        <button class="pin-key" onclick="securePinPress('1')">1</button>
+        <button class="pin-key" onclick="securePinPress('2')">2</button>
+        <button class="pin-key" onclick="securePinPress('3')">3</button>
+        <button class="pin-key" onclick="securePinPress('4')">4</button>
+        <button class="pin-key" onclick="securePinPress('5')">5</button>
+        <button class="pin-key" onclick="securePinPress('6')">6</button>
+        <button class="pin-key" onclick="securePinPress('7')">7</button>
+        <button class="pin-key" onclick="securePinPress('8')">8</button>
+        <button class="pin-key" onclick="securePinPress('9')">9</button>
+        <button class="pin-key clear" onclick="securePinBack()">⌫</button>
+        <button class="pin-key" onclick="securePinPress('0')">0</button>
+        <button class="pin-key clear" onclick="securePinClear()">×</button>
+        <button class="pin-key ok" onclick="securePinSubmit()">✓ Enter</button>
+        <button class="pin-key cancel" onclick="closeSecurePin()">× Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="printSlip" class="print-slip"></div>
 <div id="toast" class="toast"></div>
 <div class="desktop-sections"></div>
@@ -1278,6 +1336,51 @@ function updatePinDots(){const val=($('adminPass')&&$('adminPass').value)||'';do
 function pinPress(n){const p=$('adminPass');if(!p)return;if(p.value.length<4)p.value+=String(n);updatePinDots();if(p.value.length===4)setTimeout(adminLogin,120);}
 function pinBack(){const p=$('adminPass');if(!p)return;p.value=p.value.slice(0,-1);updatePinDots();}
 function pinClear(){const p=$('adminPass');if(p)p.value='';updatePinDots();}
+
+let securePinCallback=null;
+function requestSecurePin(title,sub,icon,callback){
+  securePinCallback=callback;
+  if($('securePinTitle'))$('securePinTitle').textContent=title||'Password Required';
+  if($('securePinSub'))$('securePinSub').textContent=sub||'Enter PIN to continue';
+  if($('securePinIcon'))$('securePinIcon').textContent=icon||'🔐';
+  securePinClear();
+  $('securePinModal').classList.add('show');
+}
+function closeSecurePin(){
+  $('securePinModal').classList.remove('show');
+  securePinClear();
+  securePinCallback=null;
+}
+function updateSecurePinDots(){
+  const val=($('securePinInput')&&$('securePinInput').value)||'';
+  document.querySelectorAll('#securePinDots .pin-dot').forEach((d,i)=>d.classList.toggle('filled',i<val.length));
+}
+function securePinPress(n){
+  const p=$('securePinInput');if(!p)return;
+  if(p.value.length<4)p.value+=String(n);
+  updateSecurePinDots();
+  if(p.value.length===4)setTimeout(securePinSubmit,120);
+}
+function securePinBack(){
+  const p=$('securePinInput');if(!p)return;
+  p.value=p.value.slice(0,-1);updateSecurePinDots();
+}
+function securePinClear(){
+  const p=$('securePinInput');if(p)p.value='';
+  updateSecurePinDots();
+}
+function securePinSubmit(){
+  const pin=($('securePinInput')&&$('securePinInput').value)||'';
+  if(pin==='1990'){
+    const cb=securePinCallback;
+    closeSecurePin();
+    if(typeof cb==='function')cb();
+  }else{
+    toast('PIN වැරදියි');
+    securePinClear();
+  }
+}
+
 function showAdminSection(id,tabBtn){showPage('admin');document.querySelectorAll('#admin .admin-subpage').forEach(p=>p.classList.remove('active'));if($(id))$(id).classList.add('active');document.querySelectorAll('#admin .admin-tab').forEach(t=>t.classList.remove('active'));if(tabBtn)tabBtn.classList.add('active');else{const map={adminShop:0,adminItems:1,adminPrice:2,adminReel:3,adminBackup:4,adminSettings:5};const tabs=document.querySelectorAll('#admin .admin-tab');if(tabs[map[id]||0])tabs[map[id]||0].classList.add('active');}window.scrollTo({top:0,behavior:'smooth'});}
 function adminLogin(){if($('adminPass').value==='1990'){adminUnlocked=true;closeAdminLogin();showPage('admin');showAdminSection('adminShop');toast('Admin unlocked ✓');}else{toast('PIN වැරදියි');pinClear();}}
 function setBleUI(s,lbl){
@@ -1654,7 +1757,27 @@ function exportRows(rows,filename){
 }
 function exportDailyReport(){const d=$('dailyDate').value||todayStr();exportRows(reportRows(b=>b.date===d),`LK_Fabric_Daily_${d}.xlsx`);}
 function exportMonthlyReport(){const m=$('monthPick').value||monthStr();exportRows(reportRows(b=>String(b.date).startsWith(m)),`LK_Fabric_Monthly_${m}.xlsx`);}
-function prepareEmailReport(type){const email=(db.shop.email||'').trim();if(!email){toast('Admin → Shop → email save කරන්න');return;}const subject=encodeURIComponent(type==='daily'?'Daily Fabric Sales Report':'Monthly Fabric Sales Report');location.href=`mailto:${encodeURIComponent(email)}?subject=${subject}&body=${encodeURIComponent('Report XLSX download කර attach කරන්න.\nShop: '+(db.shop.name||''))}`;}
+function requestClearReportHistory(){
+  requestSecurePin('Clear Sales History','Sales reports history මකන්න PIN අවශ්‍යයි','🗑️',clearSalesHistory);
+}
+function clearSalesHistory(){
+  if(!confirm('Sales report history සියල්ල මකන්නද?'))return;
+  db.bills=[];
+  saveLocal();
+  refreshReports();
+  toast('Sales history cleared ✓');
+}
+function prepareEmailReport(type){
+  const email=(db.shop.email||'').trim();
+  if(!email){toast('Admin → Shop → email save කරන්න');return;}
+  const subject=encodeURIComponent(type==='daily'?'Daily Fabric Sales Report':'Monthly Fabric Sales Report');
+  const body=encodeURIComponent(
+    'Report XLSX file එක download කර attach කරන්න.\\n\\n'+
+    'Shop: '+(db.shop.name||'')+'\\n'+
+    'Note: Pure HTML/PWA වලින් user approval නැතුව auto email send කරන්න browser security නිසා බැහැ.'
+  );
+  location.href=`mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
+}
 function loadShopForm(){if($('shopName'))$('shopName').value=db.shop.name||'';if($('shopPhone'))$('shopPhone').value=db.shop.phone||'';if($('shopAddress'))$('shopAddress').value=db.shop.address||'';if($('shopEmail'))$('shopEmail').value=db.shop.email||'';updateChosenFile('shopLogo','shopLogoName',true);}
 async function fileToDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});}
 async function saveShop(){db.shop.name=$('shopName').value.trim()||'LK Fabric Meter POS';db.shop.phone=$('shopPhone').value.trim();db.shop.address=$('shopAddress').value.trim();db.shop.email=$('shopEmail').value.trim();const f=$('shopLogo').files[0];if(f)db.shop.logo=await fileToDataURL(f);saveLocal();updateChosenFile('shopLogo','shopLogoName',true);if($('shopLogo'))$('shopLogo').value='';toast('Shop saved ✓');}
@@ -1689,17 +1812,13 @@ function requestManualWeightUnlock(){
     inp.blur();
     return;
   }
-  const pin=prompt('Manual Weight unlock PIN');
-  if(pin==='1990'){
+  requestSecurePin('Manual Weight','Scale disconnected නම් PIN දාලා manual weight enable කරන්න','⚖️',()=>{
     inp.readOnly=false;
     inp.classList.remove('manual-locked');
     inp.placeholder='Manual weight kg';
     if($('manualLockNote'))$('manualLockNote').textContent='🔓 Manual weight enabled until Finish';
     setTimeout(()=>inp.focus(),60);
-  }else if(pin!==null){
-    toast('PIN වැරදියි');
-    inp.blur();
-  }
+  });
 }
 function lockManualWeight(){
   const inp=$('mainManualWeight');
