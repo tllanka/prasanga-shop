@@ -771,6 +771,14 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
   font-family:var(--sans);line-height:1.45;
 }
 
+
+/* --- V18: business-day auto email + reel/excel fixes --- */
+.endday-status-box{
+  margin-top:10px;padding:10px 12px;border-radius:15px;
+  background:#ecfdf5;border:1px solid #bbf7d0;color:#166534;
+  font-size:11.5px;font-weight:850;line-height:1.45;font-family:var(--sans);
+}
+
 </style>
 </head>
 <body>
@@ -949,7 +957,6 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
       <button class="btn btn-amber" onclick="prepareEmailReport('daily')">📧 Email</button>
       <button class="btn red" onclick="requestClearReportHistory()">🗑️ Clear History</button>
     </div>
-    <div class="danger-note">Sales history මකන්න PIN අවශ්‍යයි. Clear කළ පසු auto backup update වෙනවා.</div>
   </div>
   <div class="card" style="overflow:auto;padding:0;border-radius:18px;">
     <table>
@@ -1130,6 +1137,7 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
       </div>
       <div class="right-note"><span class="pill" id="backupStatusPill">Local JSON Backup</span></div>
       <div class="backup-time-box">Last Auto Backup: <span id="lastBackupTime">—</span></div>
+      <div class="endday-status-box">Business Day Auto Email: <span id="endDayEmailStatus">Waiting</span></div>
     </div>
   </div>
   <div id="adminSettings" class="admin-subpage">
@@ -1266,6 +1274,48 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
 const KG_TO_YARD=1.0936133;
 const DB_KEY='lk_fabric_pos_tlstyle_v1';
 const DEFAULT_SCRIPT_URL='https://script.google.com/macros/s/AKfycbzWVSAWeYJ4KwQBpAnviNqE1eEXJBoAwirprp6qxTJznYnRwW2QF6iI3f_EVh6EEZLzJw/exec';
+
+const BUSINESS_DAY_END_HOUR=6; // 06:00 AM - previous day ends and auto summary can be sent
+function dateStrFromDate(d){return d.toISOString().slice(0,10);}
+function previousBusinessDayToSend(){
+  const now=new Date();
+  if(now.getHours()<BUSINESS_DAY_END_HOUR)return null;
+  const y=new Date(now);
+  y.setDate(y.getDate()-1);
+  return dateStrFromDate(y);
+}
+function sameDayRows(day){return reportRows(b=>b.date===day);}
+function hasReelConfiguredOrUsed(rows){
+  const configured=(db.items||[]).some(i=>Number(i.emptyReelKg||0)>0);
+  const used=(rows||[]).some(r=>Number(r['Empty Reel Deduction kg']||0)>0);
+  return configured||used;
+}
+function getPendingEndDayQueue(){
+  try{return JSON.parse(localStorage.getItem(DB_KEY+'_PENDING_ENDDAY_EMAILS')||'[]')||[];}catch(e){return [];}
+}
+function setPendingEndDayQueue(q){localStorage.setItem(DB_KEY+'_PENDING_ENDDAY_EMAILS',JSON.stringify(q||[]));}
+function queueEndDayEmail(day){
+  if(!day)return;
+  const q=getPendingEndDayQueue();
+  if(!q.includes(day))q.push(day);
+  setPendingEndDayQueue(q);
+}
+function markEndDaySent(day){
+  if(!db.settings)db.settings={};
+  db.settings.lastEndDayEmailSent=day;
+  const q=getPendingEndDayQueue().filter(d=>d!==day);
+  setPendingEndDayQueue(q);
+  localStorage.setItem(DB_KEY,JSON.stringify(db));
+  updateEndDayStatus();
+}
+function updateEndDayStatus(){
+  const el=$('endDayEmailStatus');
+  if(!el)return;
+  const q=getPendingEndDayQueue();
+  const sent=(db.settings&&db.settings.lastEndDayEmailSent)||'—';
+  el.textContent=q.length?('Pending: '+q.join(', ')):('Last sent: '+sent);
+}
+
 let db={shop:{name:'LK Fabric Meter POS',address:'',phone:'',email:'',logo:''},items:[],bills:[],settings:{printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:''}};
 let currentWeight=0,currentBill=[],selectedSaleItem=null,selectedReelItem=null,adminUnlocked=false,backupDirHandle=null,scaleDevice=null,printerDevice=null,printerCharacteristic=null,itemPage=1;
 const ITEMS_PER_PAGE=5;
@@ -1339,7 +1389,7 @@ function markAutoBackupDone(){
 }
 function esc(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 function parseWeight(text){const m=String(text||'').match(/[+-]?\d+(?:\.\d+)?/g);if(!m)return null;const ki=String(text).toLowerCase().lastIndexOf('kg');let pick=m[m.length-1];if(ki>-1){const b=String(text).slice(0,ki);const l=b.match(/[+-]?\d+(?:\.\d+)?/g);if(l)pick=l[l.length-1];}const v=Math.abs(Number(pick));return Number.isFinite(v)?v:null;}
-function loadLocal(){try{const raw=localStorage.getItem(DB_KEY);if(raw)db=JSON.parse(raw);}catch(e){}if(!db.items||!db.items.length){db.items=[{id:'IT001',name:'Premium Cotton Fabric',price:150,meterPerKg:5.5,emptyReelKg:.3,image:''},{id:'IT002',name:'School Uniform Fabric',price:120,meterPerKg:6.2,emptyReelKg:.25,image:''}];}if(!db.bills)db.bills=[];if(!db.reelHistory)db.reelHistory=[];ensureDailyStats();if(!db.settings)db.settings={printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:'',lastBackupAt:'',scriptUrl:DEFAULT_SCRIPT_URL};db.settings.scaleDeviceName=db.settings.scaleDeviceName||'';db.settings.printerDeviceName=db.settings.printerDeviceName||'';db.settings.lastBackupAt=db.settings.lastBackupAt||'';db.settings.scriptUrl=db.settings.scriptUrl||DEFAULT_SCRIPT_URL;if($('dailyDate'))$('dailyDate').value=todayStr();if($('monthPick'))$('monthPick').value=monthStr();loadShopForm();loadSettingsForm();refreshAll();updateClock();setInterval(updateClock,30000);setTimeout(tryReconnectSavedDevices,800);}
+function loadLocal(){try{const raw=localStorage.getItem(DB_KEY);if(raw)db=JSON.parse(raw);}catch(e){}if(!db.items||!db.items.length){db.items=[{id:'IT001',name:'Premium Cotton Fabric',price:150,meterPerKg:5.5,emptyReelKg:.3,image:''},{id:'IT002',name:'School Uniform Fabric',price:120,meterPerKg:6.2,emptyReelKg:.25,image:''}];}if(!db.bills)db.bills=[];if(!db.reelHistory)db.reelHistory=[];ensureDailyStats();if(!db.settings)db.settings={printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:'',lastBackupAt:'',scriptUrl:DEFAULT_SCRIPT_URL,lastEndDayEmailSent:''};db.settings.scaleDeviceName=db.settings.scaleDeviceName||'';db.settings.printerDeviceName=db.settings.printerDeviceName||'';db.settings.lastBackupAt=db.settings.lastBackupAt||'';db.settings.scriptUrl=db.settings.scriptUrl||DEFAULT_SCRIPT_URL;db.settings.lastEndDayEmailSent=db.settings.lastEndDayEmailSent||'';if($('dailyDate'))$('dailyDate').value=todayStr();if($('monthPick'))$('monthPick').value=monthStr();loadShopForm();loadSettingsForm();refreshAll();updateClock();setInterval(updateClock,30000);setTimeout(tryReconnectSavedDevices,800);}
 function saveLocal(skip=false){
   localStorage.setItem(DB_KEY,JSON.stringify(db));
   refreshAll();
@@ -1350,7 +1400,7 @@ function updateClock(){
   if($('clockText'))$('clockText').textContent=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
   if($('clockDate'))$('clockDate').textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'2-digit',year:'numeric'});
 }
-function refreshAll(){if($('heroTitle'))$('heroTitle').textContent=db.shop.name||'LK FABRIC POS';updateHeaderLogo();refreshSelects();refreshItemList();refreshReelHistory();refreshReports();refreshAbout();updateLiveCalc();refreshDailyStatCards();updateBackupUI();}
+function refreshAll(){if($('heroTitle'))$('heroTitle').textContent=db.shop.name||'LK FABRIC POS';updateHeaderLogo();refreshSelects();refreshItemList();refreshReelHistory();refreshReports();refreshAbout();updateLiveCalc();refreshDailyStatCards();updateBackupUI();updateEndDayStatus();}
 function updateHeaderLogo(){const img=$('brandLogoImg'),emo=$('brandLogoEmoji');if(!img||!emo)return;if(db.shop.logo){img.src=db.shop.logo;img.style.display='block';emo.style.display='none';}else{img.removeAttribute('src');img.style.display='none';emo.style.display='inline';}}
 function refreshAbout(){if($('aboutShopName'))$('aboutShopName').textContent=db.shop.name||'LK Fabric Meter POS';if($('aboutShopDisplay'))$('aboutShopDisplay').textContent=db.shop.name||'—';if($('aboutPhoneDisplay'))$('aboutPhoneDisplay').textContent=db.shop.phone||'—';if($('aboutEmailDisplay'))$('aboutEmailDisplay').textContent=db.shop.email||'—';}
 function updateBottomNotch(){
@@ -1695,7 +1745,9 @@ function reportRows(filterFn){
   (db.bills||[]).filter(filterFn).forEach(b=>{
     b.lines.forEach(l=>{
       const item=findItem(l.itemId)||{};
-      const deduction=Number(l.deduction ?? l.emptyReelDeductionKg ?? item.emptyReelKg ?? 0);
+      const savedDeduction=Number(l.emptyReelDeductionKg ?? l.deduction ?? 0);
+      const itemDeduction=Number(item.emptyReelKg||0);
+      const deduction=(savedDeduction>0 || itemDeduction>0)?savedDeduction:0;
       const gross=Number(l.grossKg||0);
       const net=Number(l.netKg ?? Math.max(0,gross-deduction));
       rows.push({
@@ -1737,7 +1789,8 @@ function exportRows(rows,filename){
     headers,
     ...rows.map(r=>headers.map(h=>r[h]??''))
   ];
-  if(totalDeduction>0){
+  const showReelSummary=hasReelConfiguredOrUsed(rows);
+  if(showReelSummary && totalDeduction>0){
     data.push(['','','','','REEL DEDUCTION TOTAL','',Number(totalDeduction.toFixed(2)),'','','','','']);
   }
   data.push(['','','','','','','','','','','','']);
@@ -1831,10 +1884,59 @@ function buildReportWorkbookBlob(rows){
   const totalYard=rows.reduce((a,r)=>a+Number(r['Yard']||0),0);
   const totalAmount=rows.reduce((a,r)=>a+Number(r['Amount']||0),0);
   const data=[headers,...rows.map(r=>headers.map(h=>r[h]??''))];
-  if(totalDeduction>0)data.push(['','','','','REEL DEDUCTION TOTAL','',Number(totalDeduction.toFixed(2)),'','','','','']);
+  const showReelSummary=hasReelConfiguredOrUsed(rows);
+  if(showReelSummary && totalDeduction>0)data.push(['','','','','REEL DEDUCTION TOTAL','',Number(totalDeduction.toFixed(2)),'','','','','']);
   data.push(['','','','','','','','','','','','']);
   data.push(['','','','','TOTAL',Number(totalGross.toFixed(2)),Number(totalDeduction.toFixed(2)),Number(totalNet.toFixed(2)),Number(totalMeter.toFixed(2)),Number(totalYard.toFixed(2)),'',Number(totalAmount.toFixed(2))]);
+
   const ws=XLSX.utils.aoa_to_sheet(data);
+
+  const headerColors=[
+    '15803D','0F766E','1D4ED8','7C3AED','C2410C','BE123C',
+    'A16207','047857','0369A1','4338CA','B45309','DC2626'
+  ];
+  const lightColors=[
+    'DCFCE7','CCFBF1','DBEAFE','EDE9FE','FFEDD5','FFE4E6',
+    'FEF3C7','D1FAE5','E0F2FE','E0E7FF','FDE68A','FEE2E2'
+  ];
+
+  const range=XLSX.utils.decode_range(ws['!ref']);
+  for(let R=range.s.r;R<=range.e.r;R++){
+    const labelCell=ws[XLSX.utils.encode_cell({r:R,c:4})];
+    const isTotal=labelCell && (labelCell.v==='TOTAL' || labelCell.v==='REEL DEDUCTION TOTAL');
+    for(let C=range.s.c;C<=range.e.c;C++){
+      const addr=XLSX.utils.encode_cell({r:R,c:C});
+      if(!ws[addr])continue;
+      const colIndex=C-range.s.c;
+      const strong=headerColors[colIndex%headerColors.length];
+      const pale=lightColors[colIndex%lightColors.length];
+      const colBorder={style:'thin',color:{rgb:strong}};
+      ws[addr].s={
+        border:{top:colBorder,bottom:colBorder,left:colBorder,right:colBorder},
+        alignment:{vertical:'center',horizontal:R===0?'center':'left',wrapText:true}
+      };
+      if(R===0){
+        ws[addr].s.fill={fgColor:{rgb:strong}};
+        ws[addr].s.font={bold:true,color:{rgb:'FFFFFF'}};
+      }else if(isTotal){
+        ws[addr].s.fill={fgColor:{rgb: labelCell.v==='TOTAL'?'DCFCE7':'FEF3C7'}};
+        ws[addr].s.font={bold:true,color:{rgb:'111827'}};
+      }else{
+        ws[addr].s.fill={fgColor:{rgb:pale}};
+        ws[addr].s.font={color:{rgb:'111827'}};
+      }
+      if(typeof ws[addr].v==='number'){
+        ws[addr].s.alignment={vertical:'center',horizontal:'right',wrapText:true};
+      }
+    }
+  }
+
+  ws['!cols']=[
+    {wch:12},{wch:12},{wch:20},{wch:12},{wch:24},
+    {wch:12},{wch:25},{wch:12},{wch:12},{wch:12},{wch:14},{wch:14}
+  ];
+  ws['!rows']=[{hpt:28}];
+
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Report');
   const arr=XLSX.write(wb,{bookType:'xlsx',type:'array'});
@@ -1902,23 +2004,28 @@ function postToAppsScriptNoCors(url,payload){
     },2500);
   });
 }
-async function sendReportViaAppsScript(type){
+async function sendReportViaAppsScript(type, dayOverride=null, silent=false){
   const email=(db.shop.email||'').trim();
   const url=(db.settings&&db.settings.scriptUrl||'').trim();
-  if(!email){toast('Admin → Shop → Report Email save කරන්න');return false;}
-  if(!url){toast('Admin → Settings → Google Apps Script URL save කරන්න');return false;}
-  if(!navigator.onLine){toast('Internet නැහැ. Excel download වෙනවා.');return false;}
+  if(!email){if(!silent)toast('Admin → Shop → Report Email save කරන්න');return false;}
+  if(!url){if(!silent)toast('Admin → Settings → Google Apps Script URL save කරන්න');return false;}
+  if(!navigator.onLine){if(!silent)toast('Internet නැහැ. Later auto send වෙයි.');return false;}
 
-  const info=getReportRowsForType(type);
-  if(!info.rows.length){toast('Data නැහැ');return true;}
-  if(typeof XLSX==='undefined'){toast('XLSX load නැහැ');return true;}
+  let info;
+  if(dayOverride){
+    info={rows:sameDayRows(dayOverride), filename:`LK_Fabric_Daily_${dayOverride}.xlsx`, label:'Daily'};
+  }else{
+    info=getReportRowsForType(type);
+  }
+  if(!info.rows.length){if(!silent)toast('Data නැහැ');return true;}
+  if(typeof XLSX==='undefined'){if(!silent)toast('XLSX load නැහැ');return false;}
 
   const blob=buildReportWorkbookBlob(info.rows);
   const base64=await blobToBase64(blob);
-  const subject=(type==='monthly'?'Monthly':'Daily')+' Fabric Sales Report - '+(db.shop.name||'');
-  const body='Attached Excel report.\\n\\nShop: '+(db.shop.name||'')+'\\nDate: '+new Date().toLocaleString();
+  const subject=(type==='monthly'?'Monthly':'Daily')+' Fabric Sales Report - '+(db.shop.name||'')+(dayOverride?' - '+dayOverride:'');
+  const body='Attached Excel report.\\n\\nShop: '+(db.shop.name||'')+'\\nBusiness Day: '+(dayOverride||($('dailyDate')&&$('dailyDate').value)||todayStr())+'\\nSent: '+new Date().toLocaleString();
 
-  toast('Email sending...');
+  if(!silent)toast('Email sending...');
   await postToAppsScriptNoCors(url,{
     token:db.settings.emailToken||'',
     to:email,
@@ -1928,7 +2035,7 @@ async function sendReportViaAppsScript(type){
     mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     fileBase64:base64
   });
-  toast('Email request sent ✓');
+  if(!silent)toast('Email request sent ✓');
   return true;
 }
 async function testAppsScriptEmail(){
@@ -1945,6 +2052,30 @@ async function testAppsScriptEmail(){
     fileBase64:''
   });
   toast('Test email request sent ✓');
+}
+
+async function processPendingEndDayEmails(){
+  const q=getPendingEndDayQueue();
+  if(!q.length)return;
+  if(!navigator.onLine){updateEndDayStatus();return;}
+  for(const day of [...q]){
+    const rows=sameDayRows(day);
+    if(!rows.length){
+      markEndDaySent(day);
+      continue;
+    }
+    const ok=await sendReportViaAppsScript('daily',day,true);
+    if(ok)markEndDaySent(day);
+    else break;
+  }
+}
+async function checkBusinessDayAutoEmail(){
+  const day=previousBusinessDayToSend();
+  if(!day)return;
+  if(db.settings&&db.settings.lastEndDayEmailSent===day)return;
+  queueEndDayEmail(day);
+  updateEndDayStatus();
+  await processPendingEndDayEmails();
 }
 
 async function prepareEmailReport(type){
@@ -2100,7 +2231,8 @@ async function manualBackup(){
 function downloadJsonBackup(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='LK_Fabric_POS_Backup.json';a.click();URL.revokeObjectURL(a.href);}
 function restoreFromFile(){$('restoreFile').click();}
 function handleRestoreFile(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.items||!d.bills)throw new Error('Invalid');db=d;saveLocal(true);loadShopForm();loadSettingsForm();refreshAll();toast('Restore done ✓');}catch(err){toast('Restore failed');}};r.readAsText(f);}
-window.addEventListener('resize',updateBottomNotch);window.addEventListener('DOMContentLoaded',()=>{loadLocal();moveBackupStateUnderClock();updateChosenFile('shopLogo','shopLogoName',true);updateChosenFile('itemImage','itemImageName',true);lockManualWeight();updateBackupUI();setTimeout(updateBottomNotch,120);});
+window.addEventListener('resize',updateBottomNotch);window.addEventListener('DOMContentLoaded',()=>{loadLocal();moveBackupStateUnderClock();updateChosenFile('shopLogo','shopLogoName',true);updateChosenFile('itemImage','itemImageName',true);lockManualWeight();updateBackupUI();updateEndDayStatus();checkBusinessDayAutoEmail();setInterval(checkBusinessDayAutoEmail,5*60*1000);setTimeout(updateBottomNotch,120);});
+window.addEventListener('online',()=>{processPendingEndDayEmails();});
 </script>
 </body>
 </html>
