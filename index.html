@@ -664,6 +664,68 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
   flex:0 0 6px!important;
 }
 
+
+/* --- V12: 58mm receipt + reel manual weight --- */
+@media print{
+  @page{size:58mm auto;margin:0;}
+  html,body{width:58mm!important;margin:0!important;padding:0!important;background:#fff!important;}
+  body *{visibility:hidden!important;}
+  .print-slip,.print-slip *{visibility:visible!important;}
+  .print-slip{
+    display:block!important;
+    position:absolute!important;
+    left:0!important;top:0!important;right:auto!important;bottom:auto!important;
+    width:58mm!important;max-width:58mm!important;
+    padding:3mm 3mm 4mm!important;
+    margin:0!important;
+    font-family:'Noto Sans Sinhala','Arial',sans-serif!important;
+    color:#000!important;background:#fff!important;
+    font-size:10px!important;line-height:1.25!important;
+  }
+  .print-slip .r-shop{
+    text-align:center!important;
+    font-size:16px!important;
+    font-weight:900!important;
+    line-height:1.15!important;
+    margin:0 0 2mm!important;
+  }
+  .print-slip .r-branch{
+    text-align:center!important;
+    font-size:10px!important;
+    font-weight:700!important;
+    margin:0 0 2mm!important;
+  }
+  .print-slip .r-line{border-top:1px dashed #000!important;margin:2mm 0!important;}
+  .print-slip .r-meta{font-size:10px!important;margin:0 0 1mm!important;display:flex!important;justify-content:space-between!important;gap:2mm!important;}
+  .print-slip .r-item{text-align:center!important;font-size:11px!important;font-weight:800!important;margin:2mm 0 1mm!important;}
+  .print-slip .r-row{display:flex!important;justify-content:space-between!important;font-size:10px!important;margin:1mm 0!important;}
+  .print-slip .r-yard-label{text-align:center!important;font-size:10px!important;font-weight:800!important;margin-top:2mm!important;}
+  .print-slip .r-yard{
+    text-align:center!important;
+    font-family:'JetBrains Mono','Arial',monospace!important;
+    font-size:22px!important;
+    font-weight:900!important;
+    line-height:1.15!important;
+    margin:0 0 1mm!important;
+  }
+  .print-slip .r-thanks{text-align:center!important;font-size:12px!important;font-weight:900!important;margin-top:3mm!important;}
+}
+.receipt-preview-card{background:var(--card);border-radius:22px;padding:18px;margin-bottom:13px;box-shadow:var(--neu-shadow);border:1px solid rgba(255,255,255,0.8);}
+.receipt-preview-58{
+  width:220px;margin:0 auto;background:#fff;color:#111;border-radius:8px;
+  border:1px dashed #9aa;box-shadow:0 12px 30px rgba(13,31,45,.15);
+  padding:12px 12px 14px;font-family:var(--sans);font-size:11px;
+}
+.receipt-preview-58 .r-shop{text-align:center;font-size:18px;font-weight:900;line-height:1.12;margin-bottom:3px;}
+.receipt-preview-58 .r-branch{text-align:center;font-size:11px;font-weight:700;color:#333;margin-bottom:8px;}
+.receipt-preview-58 .r-line{border-top:1px dashed #333;margin:8px 0;}
+.receipt-preview-58 .r-meta{display:flex;justify-content:space-between;gap:8px;font-size:11px;margin:4px 0;}
+.receipt-preview-58 .r-item{text-align:center;font-size:12px;font-weight:900;margin:8px 0 5px;}
+.receipt-preview-58 .r-row{display:flex;justify-content:space-between;font-size:11px;margin:4px 0;}
+.receipt-preview-58 .r-yard-label{text-align:center;font-size:11px;font-weight:800;margin-top:8px;}
+.receipt-preview-58 .r-yard{text-align:center;font-family:var(--mono);font-size:26px;font-weight:900;}
+.receipt-preview-58 .r-thanks{text-align:center;font-weight:900;margin-top:10px;font-size:13px;}
+
 </style>
 </head>
 <body>
@@ -867,6 +929,25 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
         <div class="data-row"><span class="data-icon">📏</span><span class="data-label">Calc</span><span class="data-value" style="font-size:13px;font-family:var(--sans);">kg → meter → yard</span><span></span></div>
         <div class="data-row"><span class="data-icon">📊</span><span class="data-label">Reports</span><span class="data-value" style="font-size:13px;font-family:var(--sans);">Daily / Monthly</span><span></span></div>
       </div>
+
+      <div class="receipt-preview-card">
+        <div class="section-title">58mm Print Preview</div>
+        <div class="receipt-preview-58">
+          <div class="r-shop">LK Fabric POS</div>
+          <div class="r-branch">Branch: Main</div>
+          <div class="r-line"></div>
+          <div class="r-meta"><span>Date</span><b>2026-05-08</b></div>
+          <div class="r-meta"><span>Time</span><b>10:25 AM</b></div>
+          <div class="r-line"></div>
+          <div class="r-item">Premium Cotton Fabric</div>
+          <div class="r-row"><span>KG</span><b>10.00 kg</b></div>
+          <div class="r-yard-label">YARD</div>
+          <div class="r-yard">52.50</div>
+          <div class="r-line"></div>
+          <div class="r-thanks">Thank You!</div>
+        </div>
+      </div>
+
       <div class="section-card" style="margin-top:12px;">
         <div class="section-title">Shop</div>
         <div class="data-row"><span class="data-icon">🏪</span><span class="data-label">Name</span><span class="data-value" style="font-size:13px;font-family:var(--sans);" id="aboutShopDisplay">—</span><span></span></div>
@@ -974,6 +1055,7 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
         <div class="fg"><label>Item ID</label><input id="reelItemId" oninput="loadReelById()"></div>
         <div class="fg"><label>Item Select</label><select id="reelItemSelect" onchange="loadReelBySelect()"></select></div>
         <div class="fg"><label>Current Scale kg</label><input id="reelWeight" disabled></div>
+        <div class="fg"><label>Manual Reel kg</label><input id="reelManualWeight" type="number" step="0.01" placeholder="0.00"></div>
       </div>
       <div class="actions"><button class="btn btn-purple" onclick="saveReelDeduction()">💾 Save Reel kg</button></div>
     </div>
@@ -1390,11 +1472,24 @@ function finishBill(){
 }
 async function printBleReceipt(bill){
   if(!printerCharacteristic){toast('Printer connect කරන්න');return;}
-  const line='--------------------------------\n';
-  let out=(db.shop.name||'LK Fabric Meter POS')+'\n'+(db.shop.phone||'')+'\n'+line;
-  out+='Invoice: '+bill.invoice+'\nDate: '+bill.date+' '+bill.time+'\n'+line;
-  bill.lines.forEach(l=>{out+=l.itemId+' '+l.itemName+'\n'+num(l.grossKg,3)+'kg  '+num(l.meter,2)+'m  Rs '+money(l.amount)+'\n';});
-  out+=line+'TOTAL: Rs '+money(bill.total.total)+'\nThank you!\n\n\n';
+  const first=(bill.lines&&bill.lines[0])||{};
+  const itemNames=(bill.lines||[]).map(l=>l.itemName).filter(Boolean).join(', ') || '-';
+  const kg=Number((bill.total&&bill.total.gross)||first.grossKg||0);
+  const yard=Number((bill.total&&bill.total.yard)||first.yard||0);
+  const line='-------------------------------\n';
+  let out='';
+  out+=(db.shop.name||'LK Fabric POS')+'\n';
+  out+='Branch: '+((db.shop&&db.shop.branch)||'Main')+'\n';
+  out+=line;
+  out+='Date: '+(bill.date||'')+'\n';
+  out+='Time: '+(bill.time||'')+'\n';
+  out+=line;
+  out+='Item: '+itemNames+'\n';
+  out+='KG  : '+num(kg,2)+' kg\n';
+  out+='YARD\n';
+  out+='      '+num(yard,2)+'\n';
+  out+=line;
+  out+='Thank You!\n\n\n';
   const data=new TextEncoder().encode(out);
   for(let i=0;i<data.length;i+=160){
     const part=data.slice(i,i+160);
@@ -1404,7 +1499,27 @@ async function printBleReceipt(bill){
   }
   toast('Bluetooth print sent ✓');
 }
-function buildPrintSlip(bill){const lines=bill.lines.map(l=>`<tr><td>${esc(l.itemId)} ${esc(l.itemName)}</td><td class="mono">${num(l.grossKg)}</td><td class="mono">${num(l.meter,2)}</td><td class="mono">${money(l.amount)}</td></tr>`).join('');$('printSlip').innerHTML=`<h2>${esc(db.shop.name||'LK Fabric Meter POS')}</h2><div class="center">${esc(db.shop.address||'')} ${esc(db.shop.phone||'')}</div><hr><table><tr><td>Invoice</td><td class="mono">${esc(bill.invoice)}</td></tr><tr><td>Date</td><td>${esc(bill.date)} ${esc(bill.time)}</td></tr></table><br><table><thead><tr><th>Item</th><th>kg</th><th>Meter</th><th>Amount</th></tr></thead><tbody>${lines}</tbody></table><br><table><tr><td>Total Meter</td><td class="mono">${num(bill.total.meter,2)} m</td></tr><tr><td><b>Total Amount</b></td><td class="mono"><b>Rs ${money(bill.total.total)}</b></td></tr></table><p class="center">Thank you!</p>`;}
+function buildPrintSlip(bill){
+  const first=(bill.lines&&bill.lines[0])||{};
+  const itemNames=(bill.lines||[]).map(l=>l.itemName).filter(Boolean).join(', ') || '-';
+  const kg=Number((bill.total&&bill.total.gross)||first.grossKg||0);
+  const yard=Number((bill.total&&bill.total.yard)||first.yard||0);
+  const branch=(db.shop&&db.shop.branch)||'Main';
+  $('printSlip').innerHTML=`
+    <div class="r-shop">${esc(db.shop.name||'LK Fabric POS')}</div>
+    <div class="r-branch">Branch: ${esc(branch)}</div>
+    <div class="r-line"></div>
+    <div class="r-meta"><span>Date</span><b>${esc(bill.date||'')}</b></div>
+    <div class="r-meta"><span>Time</span><b>${esc(bill.time||'')}</b></div>
+    <div class="r-line"></div>
+    <div class="r-item">${esc(itemNames)}</div>
+    <div class="r-row"><span>KG</span><b>${num(kg,2)} kg</b></div>
+    <div class="r-yard-label">YARD</div>
+    <div class="r-yard">${num(yard,2)}</div>
+    <div class="r-line"></div>
+    <div class="r-thanks">Thank You!</div>
+  `;
+}
 function refreshReports(){const html=(db.bills||[]).slice().reverse().map(b=>`<tr><td style="font-size:12px;font-family:var(--mono);">${esc(b.date)}</td><td style="font-family:var(--mono);font-size:11px;">${esc(b.invoice)}</td><td style="color:var(--teal2);font-family:var(--mono);font-weight:800;">Rs ${money(b.total&&b.total.total)}</td></tr>`).join('')||'<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:20px;">No reports yet</td></tr>';if($('reportBodyMobile'))$('reportBodyMobile').innerHTML=html;}
 function reportRows(filterFn){const rows=[];(db.bills||[]).filter(filterFn).forEach(b=>{b.lines.forEach(l=>rows.push({'Date':b.date,'Time':b.time,'Invoice':b.invoice,'Item ID':l.itemId,'Item Name':l.itemName,'Gross kg':Number(num(l.grossKg,2)),'Empty Reel Deduction kg':Number(num(l.deduction,2)),'Net kg':Number(num(l.netKg,2)),'Meter':Number(num(l.meter,2)),'Yard':Number(num(l.yard,2)),'Price/Meter':l.price,'Amount':Number(num(l.amount,2))}));});return rows;}
 function exportRows(rows,filename){
@@ -1416,22 +1531,28 @@ function exportRows(rows,filename){
     'Gross kg','Empty Reel Deduction kg','Net kg',
     'Meter','Yard','Price/Meter','Amount'
   ];
-  const data=[headers,...rows.map(r=>headers.map(h=>r[h]??''))];
+
+  const totalGross=rows.reduce((a,r)=>a+Number(r['Gross kg']||0),0);
+  const totalDeduction=rows.reduce((a,r)=>a+Number(r['Empty Reel Deduction kg']||0),0);
+  const totalNet=rows.reduce((a,r)=>a+Number(r['Net kg']||0),0);
+  const totalMeter=rows.reduce((a,r)=>a+Number(r['Meter']||0),0);
+  const totalYard=rows.reduce((a,r)=>a+Number(r['Yard']||0),0);
+  const totalAmount=rows.reduce((a,r)=>a+Number(r['Amount']||0),0);
+
+  const data=[
+    headers,
+    ...rows.map(r=>headers.map(h=>r[h]??''))
+  ];
+  if(totalDeduction>0){
+    data.push(['','','','','REEL DEDUCTION TOTAL','',Number(totalDeduction.toFixed(2)),'','','','','']);
+  }
+  data.push(['','','','','TOTAL',Number(totalGross.toFixed(2)),Number(totalDeduction.toFixed(2)),Number(totalNet.toFixed(2)),Number(totalMeter.toFixed(2)),Number(totalYard.toFixed(2)),'',Number(totalAmount.toFixed(2))]);
+
   const ws=XLSX.utils.aoa_to_sheet(data);
 
   const headerColors=[
-    '15803D', // Date
-    '0F766E', // Time
-    '1D4ED8', // Invoice
-    '7C3AED', // Item ID
-    'C2410C', // Item Name
-    'BE123C', // Gross kg
-    'A16207', // Empty Reel Deduction kg
-    '047857', // Net kg
-    '0369A1', // Meter
-    '4338CA', // Yard
-    'B45309', // Price/Meter
-    'DC2626'  // Amount
+    '15803D','0F766E','1D4ED8','7C3AED','C2410C','BE123C',
+    'A16207','047857','0369A1','4338CA','B45309','DC2626'
   ];
   const lightColors=[
     'DCFCE7','CCFBF1','DBEAFE','EDE9FE','FFEDD5','FFE4E6',
@@ -1440,6 +1561,8 @@ function exportRows(rows,filename){
 
   const range=XLSX.utils.decode_range(ws['!ref']);
   for(let R=range.s.r;R<=range.e.r;R++){
+    const labelCell=ws[XLSX.utils.encode_cell({r:R,c:4})];
+    const isTotal=labelCell && (labelCell.v==='TOTAL' || labelCell.v==='REEL DEDUCTION TOTAL');
     for(let C=range.s.c;C<=range.e.c;C++){
       const addr=XLSX.utils.encode_cell({r:R,c:C});
       if(!ws[addr])continue;
@@ -1457,12 +1580,15 @@ function exportRows(rows,filename){
       if(R===0){
         ws[addr].s.fill={fgColor:{rgb:strong}};
         ws[addr].s.font={bold:true,color:{rgb:'FFFFFF'}};
+      }else if(isTotal){
+        ws[addr].s.fill={fgColor:{rgb: labelCell.v==='TOTAL'?'DCFCE7':'FEF3C7'}};
+        ws[addr].s.font={bold:true,color:{rgb:'111827'}};
       }else{
         ws[addr].s.fill={fgColor:{rgb:pale}};
         ws[addr].s.font={color:{rgb:'111827'}};
-        if(typeof ws[addr].v==='number'){
-          ws[addr].s.alignment={vertical:'center',horizontal:'right',wrapText:true};
-        }
+      }
+      if(typeof ws[addr].v==='number'){
+        ws[addr].s.alignment={vertical:'center',horizontal:'right',wrapText:true};
       }
     }
   }
@@ -1550,7 +1676,15 @@ function loadPriceItemSelect(){const id=$('priceItemSelect').value;$('priceItemI
 function updatePrice(){const item=findItem($('priceItemId').value.trim());if(!item){toast('Item හමු නැහැ');return;}item.price=Number($('newPrice').value||0);saveLocal();toast('Price updated ✓');}
 function loadReelById(){const id=$('reelItemId').value.trim();selectedReelItem=findItem(id)||null;if(selectedReelItem&&$('reelItemSelect'))$('reelItemSelect').value=id;}
 function loadReelBySelect(){const id=$('reelItemSelect').value;if($('reelItemId'))$('reelItemId').value=id;selectedReelItem=findItem(id)||null;}
-function saveReelDeduction(){loadReelById();if(!selectedReelItem){toast('Item select කරන්න');return;}selectedReelItem.emptyReelKg=Number(currentWeight||0);saveLocal();toast('Reel weight saved ✓');}
+function saveReelDeduction(){
+  loadReelById();
+  if(!selectedReelItem){toast('Item select කරන්න');return;}
+  const manualVal=Number(($('reelManualWeight')&&$('reelManualWeight').value)||0);
+  selectedReelItem.emptyReelKg=manualVal>0?manualVal:Number(currentWeight||0);
+  saveLocal();
+  if($('reelManualWeight'))$('reelManualWeight').value='';
+  toast('Reel weight saved ✓');
+}
 function loadSettingsForm(){
   if($('printerType'))$('printerType').value=db.settings.printerType||'browser';
   if($('scaleHint'))$('scaleHint').value=db.settings.scaleHint||'';
