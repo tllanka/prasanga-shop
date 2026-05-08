@@ -759,6 +759,18 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
   color:#9a3412;font-size:12px;font-weight:800;font-family:var(--sans);
 }
 
+
+/* --- V16: Google Apps Script auto email --- */
+.script-url-box{
+  margin-top:14px;padding:14px;border-radius:18px;
+  background:linear-gradient(145deg,#f7fbfb,#edf6f4);
+  border:1px solid var(--border);box-shadow:var(--neu-shadow);
+}
+.email-status-note{
+  margin-top:9px;font-size:11.5px;font-weight:800;color:var(--muted);
+  font-family:var(--sans);line-height:1.45;
+}
+
 </style>
 </head>
 <body>
@@ -1140,6 +1152,11 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
       <div class="form full" style="margin-top:14px;">
         <div class="fg"><label>Printer Type</label><select id="printerType"><option value="browser">Browser Print</option><option value="bluetooth-ble">Bluetooth BLE Printer</option><option value="bluetooth-note">Bluetooth printer / Native app</option></select></div>
         <div class="fg"><label>Scale Hint</label><input id="scaleHint" placeholder="ESP32 BLE / Scale name"></div>
+        <div class="fg"><label>Google Apps Script Web App URL</label><input id="scriptUrl" placeholder="https://script.google.com/macros/s/....../exec"></div>
+      </div>
+      <div class="script-url-box">
+        <button class="btn btn-amber" onclick="testAppsScriptEmail()">📧 Test Email Script</button>
+        <div class="email-status-note">Internet තියෙන විට Email button එකෙන් Excel file එක Apps Script හරහා saved email address එකට send කරයි.</div>
       </div>
       <div class="right-note">
         <span class="pill" id="savedScalePill">Scale: —</span>
@@ -1257,6 +1274,33 @@ const num=(n,d=3)=>Number(n||0).toFixed(d);
 const disp2=n=>Number(n||0).toFixed(2);
 const todayStr=()=>new Date().toISOString().slice(0,10);
 const monthStr=()=>new Date().toISOString().slice(0,7);
+
+function blankDailyStats(date=todayStr()){
+  return {date,gross:0,meter:0,yard:0,rolls:0};
+}
+function ensureDailyStats(){
+  const d=todayStr();
+  if(!db.dailyStats || db.dailyStats.date!==d){
+    db.dailyStats=blankDailyStats(d);
+    localStorage.setItem(DB_KEY,JSON.stringify(db));
+  }
+  return db.dailyStats;
+}
+function addToDailyStats(total,lineCount){
+  const s=ensureDailyStats();
+  s.gross+=Number((total&&total.gross)||0);
+  s.meter+=Number((total&&total.meter)||0);
+  s.yard+=Number((total&&total.yard)||0);
+  s.rolls+=Number(lineCount||0);
+}
+function refreshDailyStatCards(){
+  const s=ensureDailyStats();
+  if($('stat-weight'))$('stat-weight').textContent=Number(s.gross||0).toFixed(2);
+  if($('stat-meters'))$('stat-meters').textContent=Number(s.meter||0).toFixed(2);
+  if($('stat-yards'))$('stat-yards').textContent=Number(s.yard||0).toFixed(2);
+  if($('stat-rolls'))$('stat-rolls').textContent=Number(s.rolls||0);
+}
+
 const invoiceNo=()=>'INV-'+new Date().toISOString().replace(/[-:.TZ]/g,'').slice(0,14);
 function toast(msg){const t=$('toast');if(!t)return;t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
 
@@ -1294,7 +1338,7 @@ function markAutoBackupDone(){
 }
 function esc(s){return String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 function parseWeight(text){const m=String(text||'').match(/[+-]?\d+(?:\.\d+)?/g);if(!m)return null;const ki=String(text).toLowerCase().lastIndexOf('kg');let pick=m[m.length-1];if(ki>-1){const b=String(text).slice(0,ki);const l=b.match(/[+-]?\d+(?:\.\d+)?/g);if(l)pick=l[l.length-1];}const v=Math.abs(Number(pick));return Number.isFinite(v)?v:null;}
-function loadLocal(){try{const raw=localStorage.getItem(DB_KEY);if(raw)db=JSON.parse(raw);}catch(e){}if(!db.items||!db.items.length){db.items=[{id:'IT001',name:'Premium Cotton Fabric',price:150,meterPerKg:5.5,emptyReelKg:.3,image:''},{id:'IT002',name:'School Uniform Fabric',price:120,meterPerKg:6.2,emptyReelKg:.25,image:''}];}if(!db.bills)db.bills=[];if(!db.reelHistory)db.reelHistory=[];if(!db.settings)db.settings={printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:'',lastBackupAt:''};db.settings.scaleDeviceName=db.settings.scaleDeviceName||'';db.settings.printerDeviceName=db.settings.printerDeviceName||'';db.settings.lastBackupAt=db.settings.lastBackupAt||'';if($('dailyDate'))$('dailyDate').value=todayStr();if($('monthPick'))$('monthPick').value=monthStr();loadShopForm();loadSettingsForm();refreshAll();updateClock();setInterval(updateClock,30000);setTimeout(tryReconnectSavedDevices,800);}
+function loadLocal(){try{const raw=localStorage.getItem(DB_KEY);if(raw)db=JSON.parse(raw);}catch(e){}if(!db.items||!db.items.length){db.items=[{id:'IT001',name:'Premium Cotton Fabric',price:150,meterPerKg:5.5,emptyReelKg:.3,image:''},{id:'IT002',name:'School Uniform Fabric',price:120,meterPerKg:6.2,emptyReelKg:.25,image:''}];}if(!db.bills)db.bills=[];if(!db.reelHistory)db.reelHistory=[];ensureDailyStats();if(!db.settings)db.settings={printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:'',lastBackupAt:'',scriptUrl:''};db.settings.scaleDeviceName=db.settings.scaleDeviceName||'';db.settings.printerDeviceName=db.settings.printerDeviceName||'';db.settings.lastBackupAt=db.settings.lastBackupAt||'';db.settings.scriptUrl=db.settings.scriptUrl||'';if($('dailyDate'))$('dailyDate').value=todayStr();if($('monthPick'))$('monthPick').value=monthStr();loadShopForm();loadSettingsForm();refreshAll();updateClock();setInterval(updateClock,30000);setTimeout(tryReconnectSavedDevices,800);}
 function saveLocal(skip=false){
   localStorage.setItem(DB_KEY,JSON.stringify(db));
   refreshAll();
@@ -1305,7 +1349,7 @@ function updateClock(){
   if($('clockText'))$('clockText').textContent=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
   if($('clockDate'))$('clockDate').textContent=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'2-digit',year:'numeric'});
 }
-function refreshAll(){if($('heroTitle'))$('heroTitle').textContent=db.shop.name||'LK FABRIC POS';updateHeaderLogo();refreshSelects();refreshItemList();refreshReelHistory();refreshReports();refreshAbout();updateLiveCalc();updateBackupUI();}
+function refreshAll(){if($('heroTitle'))$('heroTitle').textContent=db.shop.name||'LK FABRIC POS';updateHeaderLogo();refreshSelects();refreshItemList();refreshReelHistory();refreshReports();refreshAbout();updateLiveCalc();refreshDailyStatCards();updateBackupUI();}
 function updateHeaderLogo(){const img=$('brandLogoImg'),emo=$('brandLogoEmoji');if(!img||!emo)return;if(db.shop.logo){img.src=db.shop.logo;img.style.display='block';emo.style.display='none';}else{img.removeAttribute('src');img.style.display='none';emo.style.display='inline';}}
 function refreshAbout(){if($('aboutShopName'))$('aboutShopName').textContent=db.shop.name||'LK Fabric Meter POS';if($('aboutShopDisplay'))$('aboutShopDisplay').textContent=db.shop.name||'—';if($('aboutPhoneDisplay'))$('aboutPhoneDisplay').textContent=db.shop.phone||'—';if($('aboutEmailDisplay'))$('aboutEmailDisplay').textContent=db.shop.email||'—';}
 function updateBottomNotch(){
@@ -1569,9 +1613,6 @@ function updateLiveCalc(){
   if($('netDisplay'))$('netDisplay').textContent=num(c.netKg,2);
   if($('netDisplayShow'))$('netDisplayShow').textContent=disp2(c.netKg);
   if($('stat-weight'))$('stat-weight').textContent=disp2(currentWeight);
-  if($('stat-meters'))$('stat-meters').textContent=num(c.meter,2);
-  if($('stat-yards'))$('stat-yards').textContent=num(c.yard,2);
-  if($('stat-rolls'))$('stat-rolls').textContent=currentBill.length;
   if($('mainItemSelect')&&selectedSaleItem)$('mainItemSelect').value=selectedSaleItem.id;
   if($('mainItemId')&&selectedSaleItem)$('mainItemId').value=selectedSaleItem.id;
   if($('itemCountDisplay'))$('itemCountDisplay').textContent=currentBill.length+' Roll';
@@ -1588,6 +1629,7 @@ function finishBill(){
   const inv=invoiceNo();const now=new Date();const total=billTotals();
   const bill={invoice:inv,date:todayStr(),time:now.toLocaleTimeString(),customer:'Walk-in',lines:[...currentBill],total};
   db.bills.push(bill);
+  addToDailyStats(total,bill.lines.length);
   buildPrintSlip(bill);
   saveLocal();
   if(db.settings.printerType==='bluetooth-ble'&&printerCharacteristic){printBleReceipt(bill).catch(()=>window.print());}
@@ -1767,16 +1809,156 @@ function clearSalesHistory(){
   refreshReports();
   toast('Sales history cleared ✓');
 }
-function prepareEmailReport(type){
+function getReportRowsForType(type){
+  if(type==='monthly'){
+    const m=$('monthPick').value||monthStr();
+    return {rows:reportRows(b=>String(b.date).startsWith(m)), filename:`LK_Fabric_Monthly_${m}.xlsx`, label:'Monthly'};
+  }
+  const d=$('dailyDate').value||todayStr();
+  return {rows:reportRows(b=>b.date===d), filename:`LK_Fabric_Daily_${d}.xlsx`, label:'Daily'};
+}
+function buildReportWorkbookBlob(rows){
+  const headers=[
+    'Date','Time','Invoice','Item ID','Item Name',
+    'Gross kg','Empty Reel Deduction kg','Net kg',
+    'Meter','Yard','Price/Meter','Amount'
+  ];
+  const totalGross=rows.reduce((a,r)=>a+Number(r['Gross kg']||0),0);
+  const totalDeduction=rows.reduce((a,r)=>a+Number(r['Empty Reel Deduction kg']||0),0);
+  const totalNet=rows.reduce((a,r)=>a+Number(r['Net kg']||0),0);
+  const totalMeter=rows.reduce((a,r)=>a+Number(r['Meter']||0),0);
+  const totalYard=rows.reduce((a,r)=>a+Number(r['Yard']||0),0);
+  const totalAmount=rows.reduce((a,r)=>a+Number(r['Amount']||0),0);
+  const data=[headers,...rows.map(r=>headers.map(h=>r[h]??''))];
+  if(totalDeduction>0)data.push(['','','','','REEL DEDUCTION TOTAL','',Number(totalDeduction.toFixed(2)),'','','','','']);
+  data.push(['','','','','','','','','','','','']);
+  data.push(['','','','','TOTAL',Number(totalGross.toFixed(2)),Number(totalDeduction.toFixed(2)),Number(totalNet.toFixed(2)),Number(totalMeter.toFixed(2)),Number(totalYard.toFixed(2)),'',Number(totalAmount.toFixed(2))]);
+  const ws=XLSX.utils.aoa_to_sheet(data);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Report');
+  const arr=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  return new Blob([arr],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+async function shareOrDownloadReport(type){
+  const info=getReportRowsForType(type);
+  if(!info.rows.length){toast('Data නැහැ');return null;}
+  if(typeof XLSX==='undefined'){toast('XLSX load නැහැ');return null;}
+  const blob=buildReportWorkbookBlob(info.rows);
+  const file=new File([blob],info.filename,{type:blob.type});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{
+      await navigator.share({files:[file],title:info.label+' Report',text:(db.shop.name||'')+' '+info.label+' report'});
+      toast('Excel file shared ✓');
+      return {shared:true, info};
+    }catch(e){
+      if(e.name==='AbortError')return null;
+    }
+  }
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=info.filename;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast('Excel downloaded. Email එකට attach කරන්න.');
+  return {shared:false, info};
+}
+
+function blobToBase64(blob){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(String(reader.result).split(',')[1]||'');
+    reader.onerror=reject;
+    reader.readAsDataURL(blob);
+  });
+}
+function postToAppsScriptNoCors(url,payload){
+  return new Promise((resolve)=>{
+    const iframe=document.createElement('iframe');
+    iframe.name='gas_email_iframe_'+Date.now();
+    iframe.style.display='none';
+    document.body.appendChild(iframe);
+
+    const form=document.createElement('form');
+    form.method='POST';
+    form.action=url;
+    form.target=iframe.name;
+    form.style.display='none';
+
+    Object.entries(payload).forEach(([k,v])=>{
+      const input=document.createElement('input');
+      input.type='hidden';
+      input.name=k;
+      input.value=String(v??'');
+      form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
+
+    setTimeout(()=>{
+      try{form.remove();iframe.remove();}catch(e){}
+      resolve(true);
+    },2500);
+  });
+}
+async function sendReportViaAppsScript(type){
+  const email=(db.shop.email||'').trim();
+  const url=(db.settings&&db.settings.scriptUrl||'').trim();
+  if(!email){toast('Admin → Shop → Report Email save කරන්න');return false;}
+  if(!url){toast('Admin → Settings → Google Apps Script URL save කරන්න');return false;}
+  if(!navigator.onLine){toast('Internet නැහැ. Excel download වෙනවා.');return false;}
+
+  const info=getReportRowsForType(type);
+  if(!info.rows.length){toast('Data නැහැ');return true;}
+  if(typeof XLSX==='undefined'){toast('XLSX load නැහැ');return true;}
+
+  const blob=buildReportWorkbookBlob(info.rows);
+  const base64=await blobToBase64(blob);
+  const subject=(type==='monthly'?'Monthly':'Daily')+' Fabric Sales Report - '+(db.shop.name||'');
+  const body='Attached Excel report.\\n\\nShop: '+(db.shop.name||'')+'\\nDate: '+new Date().toLocaleString();
+
+  toast('Email sending...');
+  await postToAppsScriptNoCors(url,{
+    token:db.settings.emailToken||'',
+    to:email,
+    subject,
+    body,
+    filename:info.filename,
+    mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    fileBase64:base64
+  });
+  toast('Email request sent ✓');
+  return true;
+}
+async function testAppsScriptEmail(){
+  const email=(db.shop.email||'').trim();
+  const url=(db.settings&&db.settings.scriptUrl||'').trim();
+  if(!email){toast('Shop email save කරන්න');return;}
+  if(!url){toast('Apps Script URL save කරන්න');return;}
+  await postToAppsScriptNoCors(url,{
+    to:email,
+    subject:'Test Email - '+(db.shop.name||'LK Fabric POS'),
+    body:'Google Apps Script email test successful.',
+    filename:'',
+    mimeType:'',
+    fileBase64:''
+  });
+  toast('Test email request sent ✓');
+}
+
+async function prepareEmailReport(type){
+  const sent=await sendReportViaAppsScript(type);
+  if(sent)return;
+
   const email=(db.shop.email||'').trim();
   if(!email){toast('Admin → Shop → email save කරන්න');return;}
-  const subject=encodeURIComponent(type==='daily'?'Daily Fabric Sales Report':'Monthly Fabric Sales Report');
-  const body=encodeURIComponent(
-    'Report XLSX file එක download කර attach කරන්න.\\n\\n'+
-    'Shop: '+(db.shop.name||'')+'\\n'+
-    'Note: Pure HTML/PWA වලින් user approval නැතුව auto email send කරන්න browser security නිසා බැහැ.'
-  );
-  location.href=`mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
+  const result=await shareOrDownloadReport(type);
+  if(!result)return;
+  if(!result.shared){
+    const subject=encodeURIComponent((type==='monthly'?'Monthly':'Daily')+' Fabric Sales Report');
+    const body=encodeURIComponent('Excel file එක download වෙලා තියෙනවා. Email එකට attach කරන්න.\\n\\nShop: '+(db.shop.name||'')+'\\n');
+    location.href=`mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
+  }
 }
 function loadShopForm(){if($('shopName'))$('shopName').value=db.shop.name||'';if($('shopPhone'))$('shopPhone').value=db.shop.phone||'';if($('shopAddress'))$('shopAddress').value=db.shop.address||'';if($('shopEmail'))$('shopEmail').value=db.shop.email||'';updateChosenFile('shopLogo','shopLogoName',true);}
 async function fileToDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});}
@@ -1883,11 +2065,13 @@ function refreshReelHistory(){
 function loadSettingsForm(){
   if($('printerType'))$('printerType').value=db.settings.printerType||'browser';
   if($('scaleHint'))$('scaleHint').value=db.settings.scaleHint||'';
+  if($('scriptUrl'))$('scriptUrl').value=db.settings.scriptUrl||'';
   updateConnectionPills();
 }
 function saveConnectionSettings(){
   db.settings.printerType=$('printerType').value;
   db.settings.scaleHint=$('scaleHint').value.trim();
+  if($('scriptUrl'))db.settings.scriptUrl=$('scriptUrl').value.trim();
   saveLocal();updateConnectionPills();toast('Settings saved ✓');
 }
 async function selectBackupFolder(){if(!window.showDirectoryPicker){downloadJsonBackup();return;}try{backupDirHandle=await window.showDirectoryPicker();await manualBackup();}catch(e){toast('Cancelled');}}
