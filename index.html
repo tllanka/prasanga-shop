@@ -808,6 +808,16 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
   border-radius:inherit;
 }
 
+
+/* --- V23: BLE auto reconnect + weight zero lock --- */
+.weight-lock-note{
+  margin-top:8px;padding:9px 12px;border-radius:14px;
+  background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;
+  font-size:12px;font-weight:900;font-family:var(--sans);
+  display:none;
+}
+.weight-lock-note.show{display:block;}
+
 </style>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0f766e">
@@ -934,6 +944,7 @@ hr{border:0;border-top:1.5px solid var(--border);margin:14px 0;}
           <label>Manual Weight kg</label>
           <input id="mainManualWeight" class="manual-locked" type="number" step="0.01" placeholder="Scale only" readonly onclick="requestManualWeightUnlock()" onfocus="requestManualWeightUnlock()" oninput="setMainManualWeight()">
           <div class="manual-lock-note" id="manualLockNote">🔒 Scale disconnected නම් PIN දාලා manual weight add කරන්න</div>
+          <div class="weight-lock-note" id="weightLockNote">⚠️ කලින් bill එකේ බර ඉවත් කර LIVE WEIGHT 0.00 වන තුරු next bill finish කළ නොහැක.</div>
         </div>
       </div>
       <button class="finish-main-btn" onclick="finishBill()">🖨️ Finish / Print / Save</button>
@@ -1406,6 +1417,17 @@ function updateEndDayStatus(){
 
 let db={shop:{name:'LK Fabric Meter POS',address:'',phone:'',email:'',logo:''},items:[],bills:[],settings:{printerType:'browser',scaleHint:'',scaleDeviceName:'',printerDeviceName:''}};
 let currentWeight=0,currentBill=[],selectedSaleItem=null,selectedReelItem=null,adminUnlocked=false,backupDirHandle=null,scaleDevice=null,printerDevice=null,printerCharacteristic=null,itemPage=1;
+const ZERO_WEIGHT_THRESHOLD=0.05;
+let waitForZeroAfterFinish=false;
+let autoReconnectScaleTimer=null;
+let scaleReconnectBusy=false;
+let lastScaleDevice=null;
+function isZeroWeight(v){return Math.abs(Number(v||0))<=ZERO_WEIGHT_THRESHOLD;}
+function updateWeightLockUI(){
+  const note=$('weightLockNote');
+  if(note)note.classList.toggle('show',!!waitForZeroAfterFinish);
+}
+
 const ITEMS_PER_PAGE=5;
 const $=id=>document.getElementById(id);
 const money=n=>Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -1588,7 +1610,18 @@ function setBleUI(s,lbl){
   const l=$('ble-label-main');if(l)l.textContent=lbl||'';
   const st=$('scaleConnStatus');if(st){st.textContent=lbl||'';st.className='conn-status '+(s==='on'?'on':s==='ing'?'ing':'');}
 }
-function setWeight(v){currentWeight=Number(v||0);['weightDisplay'].forEach(id=>{if($(id))$(id).textContent=disp2(currentWeight);});if($('mainManualWeight'))$('mainManualWeight').value=disp2(currentWeight);if($('reelWeight'))$('reelWeight').value=disp2(currentWeight);updateLiveCalc();}
+function setWeight(v){
+  currentWeight=Number(v||0);
+  if(waitForZeroAfterFinish && isZeroWeight(currentWeight)){
+    waitForZeroAfterFinish=false;
+    updateWeightLockUI();
+    toast('Ready for next bill ✓');
+  }
+  if($('weightDisplay'))$('weightDisplay').textContent=disp2(currentWeight);
+  if($('mainManualWeight'))$('mainManualWeight').value=disp2(currentWeight);
+  if($('reelWeight'))$('reelWeight').value=disp2(currentWeight);
+  updateLiveCalc();
+}
 function simulateWeight(){setWeight((Math.random()*12+1).toFixed(3));toast('Test weight set ✓');}
 function decodeBleValue(value){
   try{
@@ -1613,11 +1646,71 @@ function handleBleWeightValue(value){
   if(w!==null)setWeight(w);
 }
 const BLE_UART_SERVICES=[
-  'battery_service',0x181d,0x181a,0xffe0,0xfff0,
+  '6e400001-b5a3-f393-e0a9-e50e24dcca9e',
   '0000ffe0-0000-1000-8000-00805f9b34fb',
   '0000fff0-0000-1000-8000-00805f9b34fb',
-  '6e400001-b5a3-f393-e0a9-e50e24dcca9e'
+  0xffe0,0xfff0,0x181d,0x181a,'battery_service'
 ];
+const BLE_NOTIFY_CHARS=[
+  '6e400003-b5a3-f393-e0a9-e50e24dcca9e',
+  '0000ffe1-0000-1000-8000-00805f9b34fb',
+  '0000fff1-0000-1000-8000-00805f9b34fb'
+];
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+async function connectGattWithRetry(device,retries=3){
+  let lastErr=null;
+  for(let i=1;i<=retries;i++){
+    try{
+      setBleUI('ing','Connecting... '+i+'/'+retries);
+      if(device.gatt&&device.gatt.connected){
+        try{device.gatt.disconnect();await sleep(500);}catch(e){}
+      }
+      await sleep(350);
+      return await device.gatt.connect();
+    }catch(e){
+      lastErr=e;
+      await sleep(800);
+    }
+  }
+  throw lastErr||new Error('BLE connect failed');
+}
+async function autoReconnectScale(){
+  if(scaleReconnectBusy)return false;
+  if(scaleDevice&&scaleDevice.gatt&&scaleDevice.gatt.connected)return true;
+  const device=lastScaleDevice||scaleDevice;
+  if(!device)return false;
+  scaleReconnectBusy=true;
+  try{
+    setBleUI('ing','Auto reconnect...');
+    return await attachScaleDevice(device,false,true);
+  }catch(e){
+    setBleUI('off','Tap to connect scale');
+    return false;
+  }finally{
+    scaleReconnectBusy=false;
+  }
+}
+async function tryReconnectKnownScaleDevices(){
+  if(!navigator.bluetooth||!navigator.bluetooth.getDevices)return false;
+  if(scaleDevice&&scaleDevice.gatt&&scaleDevice.gatt.connected)return true;
+  try{
+    const devices=await navigator.bluetooth.getDevices();
+    const dev=devices.find(d=>(d.name||'').includes('LK-FABRIC-SCALE') || (db.settings&&d.name===db.settings.scaleDeviceName));
+    if(dev){
+      lastScaleDevice=dev;
+      scaleDevice=dev;
+      return await autoReconnectScale();
+    }
+  }catch(e){}
+  return false;
+}
+function startScaleAutoReconnect(){
+  if(autoReconnectScaleTimer)return;
+  autoReconnectScaleTimer=setInterval(()=>{
+    if(lastScaleDevice||scaleDevice)autoReconnectScale();
+    else tryReconnectKnownScaleDevices();
+  },5000);
+}
 function bluetoothReady(){
   if(!navigator.bluetooth){toast('Android Chrome/Edge වලින් open කරන්න');return false;}
   if(location.protocol!=='https:' && location.hostname!=='localhost' && location.hostname!=='127.0.0.1'){
@@ -1629,53 +1722,95 @@ async function connectBluetooth(){return connectScaleFromAdmin();}
 async function connectScaleFromAdmin(){
   if(!bluetoothReady())return;
   try{
-    setBleUI('ing','Select scale / ESP32...');
+    setBleUI('ing','Select LK-FABRIC-SCALE...');
     const device=await navigator.bluetooth.requestDevice({
       acceptAllDevices:true,
       optionalServices:BLE_UART_SERVICES
     });
-    await attachScaleDevice(device,true);
+    await attachScaleDevice(device,true,false);
+    startScaleAutoReconnect();
   }catch(e){
     setBleUI('off','Tap to connect scale');
     if(e.name!=='NotFoundError')toast('Scale BT: '+(e.message||e));
   }
 }
-async function attachScaleDevice(device,saveName){
+async function attachScaleDevice(device,saveName,silent=false){
   scaleDevice=device;
-  setBleUI('ing','Connecting...');
-  device.addEventListener('gattserverdisconnected',()=>setBleUI('off','Scale disconnected'));
-  const server=await device.gatt.connect();
-  const services=await server.getPrimaryServices();
-  let found=false;
-  for(const service of services){
-    let chars=[];
-    try{chars=await service.getCharacteristics();}catch(e){continue;}
-    for(const ch of chars){
-      try{
-        if(ch.properties.notify||ch.properties.indicate){
-          await ch.startNotifications();
-          ch.addEventListener('characteristicvaluechanged',e=>handleBleWeightValue(e.target.value));
-          found=true;
-        }
-        if(ch.properties.read){
-          const v=await ch.readValue();
-          handleBleWeightValue(v);
-          found=true;
-        }
-      }catch(e){}
-    }
+  lastScaleDevice=device;
+  const nm=device.name||'BLE Scale';
+  if(!silent)setBleUI('ing','Connecting '+nm+'...');
+  device.addEventListener('gattserverdisconnected',()=>{
+    setBleUI('off','Scale disconnected');
+    if(!scaleReconnectBusy)toast('Scale disconnected. Auto reconnect...');
+    setTimeout(autoReconnectScale,1200);
+  });
+
+  let server;
+  try{
+    server=await connectGattWithRetry(device,3);
+  }catch(e){
+    setBleUI('off','Connection failed');
+    if(!silent)toast('Scale BT: Connection failed. ESP32 restart කර නැවත try කරන්න');
+    return false;
   }
+
+  let found=false;
+  for(const svcId of BLE_UART_SERVICES){
+    try{
+      const service=await server.getPrimaryService(svcId);
+      for(const chId of BLE_NOTIFY_CHARS){
+        try{
+          const ch=await service.getCharacteristic(chId);
+          if(ch.properties.notify||ch.properties.indicate){
+            await ch.startNotifications();
+            ch.addEventListener('characteristicvaluechanged',e=>handleBleWeightValue(e.target.value));
+            found=true;
+          }
+          if(ch.properties.read){
+            try{handleBleWeightValue(await ch.readValue());found=true;}catch(e){}
+          }
+        }catch(e){}
+      }
+    }catch(e){}
+    if(found)break;
+  }
+
+  if(!found){
+    try{
+      const services=await server.getPrimaryServices();
+      for(const service of services){
+        let chars=[];
+        try{chars=await service.getCharacteristics();}catch(e){continue;}
+        for(const ch of chars){
+          try{
+            if(ch.properties.notify||ch.properties.indicate){
+              await ch.startNotifications();
+              ch.addEventListener('characteristicvaluechanged',e=>handleBleWeightValue(e.target.value));
+              found=true;
+            }
+            if(ch.properties.read){
+              const v=await ch.readValue();
+              handleBleWeightValue(v);
+              found=true;
+            }
+          }catch(e){}
+        }
+      }
+    }catch(e){}
+  }
+
   if(found){
-    const nm=device.name||'BLE Scale';
     db.settings.scaleDeviceName=nm;
     if(saveName)saveLocal(true);
     updateConnectionPills();
     setBleUI('on','Scale: '+nm);
-    toast('Scale connected ✓');
+    if(!silent)toast('Scale connected ✓');
+    startScaleAutoReconnect();
     return true;
   }
+
   setBleUI('off','Scale data not found');
-  toast('Scale data characteristic හමු නොවුණා');
+  if(!silent)toast('BLE connected, but data characteristic හමු නොවුණා');
   return false;
 }
 async function connectPrinterFromAdmin(){
@@ -1774,9 +1909,10 @@ function updateLiveCalc(){
   if($('itemCountDisplay'))$('itemCountDisplay').textContent=currentBill.length+' Roll';
   updateItemShowcase();
 }
-function addSaleLine(){if(!selectedSaleItem){toast('Item select කරන්න');return;}if(currentWeight<=0){toast('Weight > 0 විය යුතුයි');return;}const c=calcForItem(selectedSaleItem,currentWeight);currentBill.push({itemId:selectedSaleItem.id,itemName:selectedSaleItem.name,price:Number(selectedSaleItem.price),meterPerKg:Number(selectedSaleItem.meterPerKg),emptyReelDeductionKg:Number(c.deduction||0),...c});updateLiveCalc();toast('Item added ✓');}
+function addSaleLine(){if(waitForZeroAfterFinish){toast('මුලින් බර ඉවත් කර LIVE WEIGHT 0.00 කරන්න');return;}if(!selectedSaleItem){toast('Item select කරන්න');return;}if(currentWeight<=0){toast('Weight > 0 විය යුතුයි');return;}const c=calcForItem(selectedSaleItem,currentWeight);currentBill.push({itemId:selectedSaleItem.id,itemName:selectedSaleItem.name,price:Number(selectedSaleItem.price),meterPerKg:Number(selectedSaleItem.meterPerKg),emptyReelDeductionKg:Number(c.deduction||0),...c});updateLiveCalc();toast('Item added ✓');}
 function billTotals(lines=currentBill){return lines.reduce((a,l)=>{a.gross+=l.grossKg;a.net+=l.netKg;a.meter+=l.meter;a.yard+=l.yard;a.total+=l.amount;return a;},{gross:0,net:0,meter:0,yard:0,total:0});}
 function finishBill(){
+  if(waitForZeroAfterFinish){toast('මුලින් බර ඉවත් කර LIVE WEIGHT 0.00 කරන්න');return;}
   if(selectedSaleItem && currentWeight>0){
     const c=calcForItem(selectedSaleItem,currentWeight);
     currentBill.push({itemId:selectedSaleItem.id,itemName:selectedSaleItem.name,price:Number(selectedSaleItem.price),meterPerKg:Number(selectedSaleItem.meterPerKg),emptyReelDeductionKg:Number(c.deduction||0),...c});
@@ -1791,6 +1927,8 @@ function finishBill(){
   if(db.settings.printerType==='bluetooth-ble'&&printerCharacteristic){printBleReceipt(bill).catch(()=>window.print());}
   else setTimeout(()=>window.print(),150);
   currentBill=[];
+  waitForZeroAfterFinish=true;
+  updateWeightLockUI();
   clearMainPage();
   toast('Bill saved, printed & backed up ✓');
 }
@@ -2371,7 +2509,7 @@ async function manualBackup(){
 function downloadJsonBackup(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='LK_Fabric_POS_Backup.json';a.click();URL.revokeObjectURL(a.href);}
 function restoreFromFile(){$('restoreFile').click();}
 function handleRestoreFile(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!d.items||!d.bills)throw new Error('Invalid');db=d;saveLocal(true);loadShopForm();loadSettingsForm();refreshAll();toast('Restore done ✓');}catch(err){toast('Restore failed');}};r.readAsText(f);}
-window.addEventListener('resize',updateBottomNotch);window.addEventListener('DOMContentLoaded',()=>{loadLocal();applyDefaultHeaderLogo();moveBackupStateUnderClock();updateChosenFile('shopLogo','shopLogoName',true);updateChosenFile('itemImage','itemImageName',true);lockManualWeight();updateBackupUI();updateEndDayStatus();updateMonthEmailStatus();checkBusinessDayAutoEmail();checkMonthEndAutoEmail();setInterval(()=>{checkBusinessDayAutoEmail();checkMonthEndAutoEmail();},5*60*1000);setTimeout(updateBottomNotch,120);});
+window.addEventListener('resize',updateBottomNotch);window.addEventListener('DOMContentLoaded',()=>{loadLocal();applyDefaultHeaderLogo();moveBackupStateUnderClock();tryReconnectKnownScaleDevices();startScaleAutoReconnect();updateWeightLockUI();updateChosenFile('shopLogo','shopLogoName',true);updateChosenFile('itemImage','itemImageName',true);lockManualWeight();updateBackupUI();updateEndDayStatus();updateMonthEmailStatus();checkBusinessDayAutoEmail();checkMonthEndAutoEmail();setInterval(()=>{checkBusinessDayAutoEmail();checkMonthEndAutoEmail();},5*60*1000);setTimeout(updateBottomNotch,120);});
 window.addEventListener('online',()=>{processPendingEndDayEmails();processPendingMonthEmails();});
 
 /* --- PWA install logic --- */
